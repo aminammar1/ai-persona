@@ -20,7 +20,7 @@ Each project's database is in that project's directory. `get_persona(task)` cann
 - `review_learning_suggestion(suggestionId, approved)`: explicitly apply one narrow change or reject it.
 - `list_changes()` and `undo_change(changeId)`: inspect recent applied changes and undo one without deleting its log entry.
 
-`recordCompactionSummary(projectRoot, summary)` is an internal API for adapters to call at a verified compaction event. The OpenCode, Claude Code, and Codex adapters are not wired to it yet; each adapter must first be checked against its current official hook documentation.
+`recordCompactionSummary(projectRoot, summary)` stores structured decisions, corrections, and the complete current open problem list. OpenCode reads the generated text from `session.compaction.ended`; Claude Code instructs compaction to emit labeled sections and reads `compact_summary` from `PostCompact`. Both store only bullets under those headings. Codex `PostCompact` exposes only the trigger, so Codex compaction saving remains unavailable without reading a transcript. Prompt repetition state stores only three SHA 256 fingerprints in the project's state file and resets at a new session; prompt text is not retained.
 
 ## Standing-order guards
 
@@ -28,7 +28,7 @@ Confirmed guards are stored in the same project-local SQLite file and are checke
 
 The OpenCode v2 plugin at `.opencode/plugins/ai-persona/` checks confirmed rules in the `execute.before` tool hook and raises OpenCode's `Tool.Error` with a one-line reason before execution. It selects the database using the current session location. Guards run regardless of persona state. If the store or adapter check fails, the hook blocks the call rather than letting an unchecked call run. `persona-init` installs the runtime into `.ai-persona/runtime`, links this plugin into `.opencode/plugins/`, and registers the MCP server. Claude Code and Codex call `hooks/agent-hook.ts` from their project hook configuration. Their verified hook coverage and gaps are listed in [agent-hooks.md](agent-hooks.md).
 
-OpenCode loads this local plugin automatically. Its v2 API does not expose `session.compacted`; `session.compaction.ended` exists, but this plugin does not use it as a substitute. Compaction memory saving therefore remains unwired.
+OpenCode loads this local plugin automatically. Its v2 API does not expose `session.compacted`; it exposes `session.compaction.ended` with the generated summary text. The plugin adds a short structured handoff request to the real `compaction` session hook, then stores only labeled bullets from the completed summary.
 
 ## Learning from repeated signals
 

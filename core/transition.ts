@@ -1,7 +1,8 @@
+import { createHash } from "node:crypto";
 import { applyStateDials } from "./dials.ts";
 import { detectPersonaState } from "./detector.ts";
 import { loadProfile, type LoadProfileOptions } from "./profile.ts";
-import { readLastSettingsKey, readLastState, writeLastState } from "./state-store.ts";
+import { readLastState, readPromptSignals, writeLastState } from "./state-store.ts";
 import { getLearnedDialOverride } from "./learning.ts";
 import type { PersonaState, PromptContext, PromptTransition } from "./types.ts";
 
@@ -13,13 +14,13 @@ const STATE_BEHAVIOR: Record<PersonaState, string> = {
   careful: "surface the plan and ask before risky actions",
 };
 
-function buildHint(state: PersonaState, verbosity: string, nativeMode?: string): string {
-  const modeName = nativeMode?.replace(/[^\p{L}\p{N} _-]/gu, "").trim().slice(0, 24);
-  const modeNote = modeName
-    ? `Respect the active built-in ${modeName} mode, tools, and permissions.`
-    : "Respect built-in modes, tools, and permissions.";
-  const verbosityNote = verbosity === "low" ? " Keep it concise." : "";
-  return `Persona ${state}: ${STATE_BEHAVIOR[state]}.${verbosityNote} Keep the developer's task unchanged. ${modeNote}`;
+function buildHint(state: PersonaState, dials: { verbosity: string; autonomy: string; caution: string; exploration: string }): string {
+  return `Persona ${state}: verbosity ${dials.verbosity}, autonomy ${dials.autonomy}, caution ${dials.caution}, exploration ${dials.exploration}. ${STATE_BEHAVIOR[state]}. Keep the developer's task unchanged; respect active agent modes, tools, and permissions.`;
+}
+
+function promptFingerprint(prompt: string): string {
+  const normalized = prompt.toLocaleLowerCase().replace(/\s+/g, " ").trim().replace(/[.!?]+$/, "");
+  return createHash("sha256").update(normalized).digest("hex");
 }
 
 /**
@@ -33,8 +34,12 @@ export function processPrompt(
   profileOptions: LoadProfileOptions = {},
 ): PromptTransition {
   const previousState = readLastState(projectRoot);
+  const promptSignals = readPromptSignals(projectRoot);
+  const fingerprint = promptFingerprint(prompt);
   const state = detectPersonaState(prompt, {
     ...context,
+    repeated: context.repeated ?? promptSignals.hashes.includes(fingerprint),
+    interrupted: context.interrupted ?? promptSignals.interrupted,
     firstPrompt: context.firstPrompt ?? previousState === null,
   });
   const profile = loadProfile(projectRoot, profileOptions);
@@ -42,13 +47,16 @@ export function processPrompt(
   const learnedVerbosity = getLearnedDialOverride(projectRoot, state, "verbosity");
   if (learnedVerbosity) dials.verbosity = learnedVerbosity;
   const settingsKey = JSON.stringify(dials);
-  const changed = state !== previousState || settingsKey !== readLastSettingsKey(projectRoot);
+  const changed = state !== previousState;
   const result: PromptTransition = {
     state,
     changed,
     dials,
-    hint: changed ? buildHint(state, dials.verbosity, context.nativeMode) : null,
+    hint: changed ? buildHint(state, dials) : null,
   };
-  writeLastState(projectRoot, state, settingsKey);
+  writeLastState(projectRoot, state, settingsKey, {
+    hashes: [...promptSignals.hashes, fingerprint],
+    interrupted: false,
+  });
   return result;
 }

@@ -105,7 +105,7 @@ function codexHooksDisabled(project) {
     if (!existsSync(configPath)) return false;
     const source = readFileSync(configPath, "utf8");
     const features = source.match(/^\[features\][\s\S]*?(?=^\[|$(?![\s\S]))/m)?.[0] ?? "";
-    return /^hooks\s*=\s*false\b/m.test(features);
+    return /^(?:hooks|codex_hooks)\s*=\s*false\b/m.test(features);
   });
 }
 
@@ -192,7 +192,7 @@ try {
   if (agent === "codex") {
     process.stdout.write("Codex loads project settings only after you trust the project. Review and trust ai-persona hooks with /hooks before relying on them. Setup does not change project trust.\n");
     if (codexHooksDisabled(project)) {
-      process.stdout.write("Warning: hooks are disabled in your Codex config. The adapter is installed but its hooks will not run; review [features].hooks before relying on guards.\n");
+      process.stdout.write("Warning: hooks are disabled in your Codex config. The adapter is installed but its hooks will not run; review [features].hooks (or the deprecated codex_hooks alias) before relying on guards.\n");
     }
   }
 } catch (error) {

@@ -21,6 +21,8 @@ export interface PersonaProfile {
 export interface PromptContext {
   /** Recent prompts from this session, oldest first. */
   recentPrompts?: string[];
+  /** Whether the normalized prompt fingerprint was seen recently. */
+  repeated?: boolean;
   interrupted?: boolean;
   firstPrompt?: boolean;
   /** A native mode is descriptive context only; ai-persona never changes it. */

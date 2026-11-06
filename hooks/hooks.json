@@ -70,6 +70,26 @@
           }
         ]
       }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"${CLAUDE_PLUGIN_ROOT}\" && AI_PERSONA_AGENT=claude npm run --silent hook"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"${CLAUDE_PLUGIN_ROOT}\" && AI_PERSONA_AGENT=claude npm run --silent hook"
+          }
+        ]
+      }
     ]
   }
 }

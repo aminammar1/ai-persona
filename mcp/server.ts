@@ -13,6 +13,12 @@ import {
 } from "../core/learning.ts";
 
 const projectRoot = process.env.AI_PERSONA_PROJECT_ROOT ?? process.cwd();
+const MAX_RESPONSE_CHARS = 1_000;
+
+function bounded(text: string): string {
+  if (text.length <= MAX_RESPONSE_CHARS) return text;
+  return `${text.slice(0, MAX_RESPONSE_CHARS - 1).trimEnd()}…`;
+}
 
 function createServer(): McpServer {
   const server = new McpServer({ name: "ai-persona", version: "0.1.0" });
@@ -23,7 +29,7 @@ function createServer(): McpServer {
       description: "Get this project's baseline profile and up to three short memory notes relevant to a task.",
       inputSchema: z.object({ task: z.string().trim().min(1).max(2000) }),
     },
-    async ({ task }) => ({ content: [{ type: "text", text: getPersonaContext(projectRoot, task) }] }),
+    async ({ task }) => ({ content: [{ type: "text", text: bounded(getPersonaContext(projectRoot, task)) }] }),
   );
 
   server.registerTool(
@@ -36,9 +42,9 @@ function createServer(): McpServer {
       recordCorrection(projectRoot, note);
       const suggestionId = considerCorrection(projectRoot, note);
       return {
-        content: [{ type: "text", text: suggestionId
+        content: [{ type: "text", text: bounded(suggestionId
           ? `Correction saved. Repeated pattern created suggestion ${suggestionId}; nothing was applied.`
-          : "Correction saved. A single occurrence never creates or applies a suggestion." }],
+          : "Correction saved. A single occurrence never creates or applies a suggestion.") }],
       };
     },
   );
@@ -52,7 +58,7 @@ function createServer(): McpServer {
     async ({ change }) => {
       const id = proposeUpdate(projectRoot, change);
       return {
-        content: [{ type: "text", text: `Suggestion ${id} saved as pending. Nothing was changed; ask the developer before applying it.` }],
+        content: [{ type: "text", text: bounded(`Suggestion ${id} saved as pending. Nothing was changed; ask the developer before applying it.`) }],
       };
     },
   );
@@ -67,14 +73,14 @@ function createServer(): McpServer {
       const proposal = proposeGuard(projectRoot, rule);
       if (!proposal) {
         return {
-          content: [{ type: "text", text: "I couldn't parse that rule. Use a clear don't commit, don't push, don't touch <path>, or use this MCP <name> instruction." }],
+          content: [{ type: "text", text: bounded("I couldn't parse that rule. Use a clear don't commit, don't push, don't touch <path>, or use this MCP <name> instruction.") }],
           isError: true,
         };
       }
       return {
         content: [{
           type: "text",
-          text: `Parsed as: ${proposal.parsed.rule} Confirm with the developer once before activating (proposal ${proposal.proposalId}).`,
+          text: bounded(`Parsed as: ${proposal.parsed.rule} Confirm with the developer once before activating (proposal ${proposal.proposalId}).`),
         }],
       };
     },
@@ -91,11 +97,11 @@ function createServer(): McpServer {
       return {
         content: [{
           type: "text",
-          text: !changed
+          text: bounded(!changed
             ? "No pending standing-order proposal with that id was found."
             : accepted
               ? "Standing order activated for this project. It will apply in every persona state."
-              : "Standing-order proposal rejected; no guard was activated.",
+              : "Standing-order proposal rejected; no guard was activated."),
         }],
       };
     },
@@ -110,9 +116,9 @@ function createServer(): McpServer {
     async () => {
       const suggestions = listLearningSuggestions(projectRoot, 3);
       return {
-        content: [{ type: "text", text: suggestions.length
+        content: [{ type: "text", text: bounded(suggestions.length
           ? suggestions.map((item) => `${item.id}. ${item.change} Reason: ${item.reason}`).join("\n")
-          : "No pending learning suggestions." }],
+          : "No pending learning suggestions.") }],
       };
     },
   );
@@ -126,13 +132,13 @@ function createServer(): McpServer {
     async ({ suggestionId, approved }) => {
       const result = reviewLearningSuggestion(projectRoot, suggestionId, approved);
       return {
-        content: [{ type: "text", text: !result.changed
+        content: [{ type: "text", text: bounded(!result.changed
           ? result.confirmationRequired
             ? `No matching developer confirmation was recorded. Ask for “yes ${suggestionId}” or “no ${suggestionId}” before reviewing it.`
             : "No pending learning suggestion with that id was found."
           : approved
             ? `Suggestion applied as change ${result.changeId}. It can be undone with undo_change.`
-            : "Suggestion rejected; no change was made." }],
+            : "Suggestion rejected; no change was made.") }],
       };
     },
   );
@@ -146,9 +152,9 @@ function createServer(): McpServer {
     async ({ beforeId }) => {
       const changes = listAppliedChanges(projectRoot, 3, beforeId);
       return {
-        content: [{ type: "text", text: changes.length
+        content: [{ type: "text", text: bounded(changes.length
           ? changes.map((change) => `${change.id}. ${change.details}: ${change.undoneAt ? "undone" : "active"}`).join("\n")
-          : "No learning changes have been applied." }],
+          : "No learning changes have been applied.") }],
       };
     },
   );
@@ -160,9 +166,9 @@ function createServer(): McpServer {
       inputSchema: z.object({ changeId: z.number().int().positive() }),
     },
     async ({ changeId }) => ({
-      content: [{ type: "text", text: undoAppliedChange(projectRoot, changeId)
+      content: [{ type: "text", text: bounded(undoAppliedChange(projectRoot, changeId)
         ? `Change ${changeId} undone; its log entry was retained.`
-        : "No active change with that id was found." }],
+        : "No active change with that id was found.") }],
     }),
   );
 

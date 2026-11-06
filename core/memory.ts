@@ -11,6 +11,40 @@ export interface CompactionSummary {
   openProblems: string[];
 }
 
+/** Parse only explicitly labelled facts from an agent's compacted summary. */
+export function recordCompactionText(projectRoot: string, text: string): number {
+  const groups: Record<"decisions" | "corrections" | "openProblems", string[]> = {
+    decisions: [],
+    corrections: [],
+    openProblems: [],
+  };
+  const headings: Record<string, keyof typeof groups> = {
+    decisions: "decisions",
+    corrections: "corrections",
+    "open problems": "openProblems",
+  };
+  let current: keyof typeof groups | null = null;
+  const seen = new Set<string>();
+  for (const line of text.split(/\r?\n/)) {
+    const heading = line.match(/^\s{0,3}(?:#{1,3}\s*)?(?:\*\*)?(decisions|corrections|open problems)(?:\*\*)?\s*:?\s*#*\s*$/i);
+    if (heading) {
+      current = headings[heading[1].toLocaleLowerCase()];
+      seen.add(current);
+      continue;
+    }
+    if (!current) continue;
+    const item = line.match(/^\s*(?:[-*+]\s+|\d+[.)]\s+)(.{1,300})$/);
+    if (item && !/^(?:none|nothing|no open problems?)[.!]?$/i.test(item[1].trim())) groups[current].push(item[1].trim());
+    else if (line.trim() && !/^\s/.test(line)) current = null;
+  }
+  if (!seen.has("openProblems")) return 0;
+  return recordCompactionSummary(projectRoot, {
+    decisions: groups.decisions,
+    corrections: groups.corrections,
+    openProblems: groups.openProblems,
+  });
+}
+
 export interface MemoryNote {
   kind: MemoryKind;
   content: string;

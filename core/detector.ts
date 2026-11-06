@@ -35,6 +35,7 @@ export function detectPersonaState(prompt: string, context: PromptContext = {}):
     ERROR_PATTERN.test(prompt) ||
     DEBUG_PATTERN.test(prompt) ||
     context.interrupted ||
+    context.repeated ||
     isRepeated(prompt, context.recentPrompts)
   ) return "debug";
   if (EXPLORE_PATTERN.test(prompt)) return "explore";

@@ -1,7 +1,7 @@
 import { Plugin } from "@opencode/plugin";
 import { Error as ToolError } from "@opencode/plugin/promise/tool";
 import { evaluateGuards } from "../../../core/guards.ts";
-import { getActiveGuards } from "../../../core/memory.ts";
+import { getActiveGuards, recordCompactionText } from "../../../core/memory.ts";
 import {
   recordInterruption,
   recordLearningConfirmation,
@@ -10,7 +10,7 @@ import {
 } from "../../../core/learning.ts";
 import { loadProfile } from "../../../core/profile.ts";
 import { processPrompt } from "../../../core/transition.ts";
-import { writeLastState } from "../../../core/state-store.ts";
+import { markPromptInterrupted, resetPromptSignals, writeLastState } from "../../../core/state-store.ts";
 import type { ToolCallForGuard } from "../../../core/guards.ts";
 
 function inputObject(input: unknown): Record<string, unknown> {
@@ -81,16 +81,24 @@ export default Plugin.define({
     const controller = new AbortController();
     void (async () => {
       for await (const event of ctx.event.subscribe({
-        types: ["session.created", "session.execution.interrupted", "permission.asked", "permission.replied"],
+        types: ["session.created", "session.execution.interrupted", "session.compaction.ended", "permission.asked", "permission.replied"],
         signal: controller.signal,
       })) {
         if (event.type === "session.created") {
-          if (!event.data.parentID) writeLastState(event.data.location.directory, "init");
+          if (!event.data.parentID) {
+            resetPromptSignals(event.data.location.directory);
+            writeLastState(event.data.location.directory, "init");
+          }
           continue;
         }
         const projectRoot = event.location?.directory ?? ctx.location.project.canonical;
+        if (event.type === "session.compaction.ended") {
+          if (event.data?.text) recordCompactionText(projectRoot, event.data.text);
+          continue;
+        }
         if (event.type === "session.execution.interrupted") {
           recordInterruption(projectRoot, event.data.reason, event.id);
+          if (event.data.reason === "user") markPromptInterrupted(projectRoot);
           continue;
         }
         if (event.type === "permission.asked") {
@@ -110,6 +118,13 @@ export default Plugin.define({
       recordLearningConfirmation(session.location.directory, event.prompt.text);
       const transition = processPrompt(session.location.directory, event.prompt.text);
       if (transition.hint) event.prompt.text = `${event.prompt.text}\n\n${transition.hint}`;
+    });
+
+    await ctx.session.hook("compaction", (event) => {
+      event.system.push({
+        type: "text",
+        text: "For the ai-persona project handoff, include these exact headings and concise bullets: Decisions, Corrections, Open problems. Use an empty Open problems section when none remain. Include only durable project facts. Never include a transcript or unrelated detail.",
+      });
     });
 
     await ctx.tool.hook("execute.before", async (event) => {

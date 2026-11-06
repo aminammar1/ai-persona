@@ -1,11 +1,11 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { evaluateGuards } from "../core/guards.ts";
-import { getActiveGuards } from "../core/memory.ts";
+import { getActiveGuards, recordCompactionText } from "../core/memory.ts";
 import { recordInterruption, recordLearningConfirmation } from "../core/learning.ts";
 import { loadProfile } from "../core/profile.ts";
 import { processPrompt } from "../core/transition.ts";
-import { writeLastState } from "../core/state-store.ts";
+import { markPromptInterrupted, resetPromptSignals, writeLastState } from "../core/state-store.ts";
 import type { ToolCallForGuard } from "../core/guards.ts";
 
 interface HookInput extends Record<string, unknown> {
@@ -18,6 +18,7 @@ interface HookInput extends Record<string, unknown> {
   tool_input?: unknown;
   permissionDecision?: string;
   event?: string;
+  compact_summary?: string;
 }
 
 const agent = process.env.AI_PERSONA_AGENT === "codex" ? "codex" : "claude";
@@ -96,7 +97,10 @@ async function main(): Promise<void> {
   const event = input.hook_event_name ?? "";
 
   if (event === "SessionStart") {
-    if (input.source === "startup" || input.source === "clear") writeLastState(projectRoot, "init");
+    if (input.source === "startup" || input.source === "clear") {
+      resetPromptSignals(projectRoot);
+      writeLastState(projectRoot, "init");
+    }
     return;
   }
 
@@ -142,6 +146,17 @@ async function main(): Promise<void> {
 
   if (event === "Interrupt") {
     recordInterruption(projectRoot, "user", typeof input.turn_id === "string" ? input.turn_id : undefined);
+    markPromptInterrupted(projectRoot);
+    return;
+  }
+
+  if (event === "PreCompact" && agent === "claude") {
+    process.stdout.write("For the ai-persona project handoff, include these exact headings and concise bullets: Decisions, Corrections, Open problems. Use an empty Open problems section when none remain. Include only durable project facts. Never include a transcript or unrelated detail.\n");
+    return;
+  }
+
+  if (event === "PostCompact" && agent === "claude") {
+    if (typeof input.compact_summary === "string") recordCompactionText(projectRoot, input.compact_summary);
     return;
   }
 
