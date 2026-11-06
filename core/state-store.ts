@@ -25,12 +25,25 @@ export function readLastState(projectRoot: string): PersonaState | null {
   }
 }
 
+export function readLastSettingsKey(projectRoot: string): string | null {
+  const path = statePath(projectRoot);
+  if (!existsSync(path)) return null;
+  try {
+    const value: unknown = JSON.parse(readFileSync(path, "utf8"));
+    if (typeof value !== "object" || value === null || !("settingsKey" in value)) return null;
+    const settingsKey = (value as { settingsKey: unknown }).settingsKey;
+    return typeof settingsKey === "string" ? settingsKey : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Atomically persist the last state in this project, separate from the profile. */
-export function writeLastState(projectRoot: string, state: PersonaState): void {
+export function writeLastState(projectRoot: string, state: PersonaState, settingsKey?: string): void {
   const directory = resolve(projectRoot, STATE_DIRECTORY);
   const destination = statePath(projectRoot);
   const temporary = `${destination}.tmp`;
   mkdirSync(directory, { recursive: true });
-  writeFileSync(temporary, `${JSON.stringify({ lastState: state }, null, 2)}\n`, "utf8");
+  writeFileSync(temporary, `${JSON.stringify({ lastState: state, ...(settingsKey ? { settingsKey } : {}) }, null, 2)}\n`, "utf8");
   renameSync(temporary, destination);
 }

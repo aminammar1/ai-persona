@@ -1,7 +1,8 @@
 import { applyStateDials } from "./dials.ts";
 import { detectPersonaState } from "./detector.ts";
 import { loadProfile, type LoadProfileOptions } from "./profile.ts";
-import { readLastState, writeLastState } from "./state-store.ts";
+import { readLastSettingsKey, readLastState, writeLastState } from "./state-store.ts";
+import { getLearnedDialOverride } from "./learning.ts";
 import type { PersonaState, PromptContext, PromptTransition } from "./types.ts";
 
 const STATE_BEHAVIOR: Record<PersonaState, string> = {
@@ -12,17 +13,18 @@ const STATE_BEHAVIOR: Record<PersonaState, string> = {
   careful: "surface the plan and ask before risky actions",
 };
 
-function buildHint(state: PersonaState, nativeMode?: string): string {
+function buildHint(state: PersonaState, verbosity: string, nativeMode?: string): string {
   const modeName = nativeMode?.replace(/[^\p{L}\p{N} _-]/gu, "").trim().slice(0, 24);
   const modeNote = modeName
     ? `Respect the active built-in ${modeName} mode, tools, and permissions.`
     : "Respect built-in modes, tools, and permissions.";
-  return `Persona ${state}: ${STATE_BEHAVIOR[state]}. Keep the developer's task unchanged. ${modeNote}`;
+  const verbosityNote = verbosity === "low" ? " Keep it concise." : "";
+  return `Persona ${state}: ${STATE_BEHAVIOR[state]}.${verbosityNote} Keep the developer's task unchanged. ${modeNote}`;
 }
 
 /**
  * Classify a prompt, derive its dials from profile.md, emit a hint only for a
- * state change, and persist that state for the current project.
+ * persona-state or dial change, and persist both for the current project.
  */
 export function processPrompt(
   projectRoot: string,
@@ -36,13 +38,17 @@ export function processPrompt(
     firstPrompt: context.firstPrompt ?? previousState === null,
   });
   const profile = loadProfile(projectRoot, profileOptions);
-  const changed = state !== previousState;
+  const dials = applyStateDials(profile.baseline, state);
+  const learnedVerbosity = getLearnedDialOverride(projectRoot, state, "verbosity");
+  if (learnedVerbosity) dials.verbosity = learnedVerbosity;
+  const settingsKey = JSON.stringify(dials);
+  const changed = state !== previousState || settingsKey !== readLastSettingsKey(projectRoot);
   const result: PromptTransition = {
     state,
     changed,
-    dials: applyStateDials(profile.baseline, state),
-    hint: changed ? buildHint(state, context.nativeMode) : null,
+    dials,
+    hint: changed ? buildHint(state, dials.verbosity, context.nativeMode) : null,
   };
-  writeLastState(projectRoot, state);
+  writeLastState(projectRoot, state, settingsKey);
   return result;
 }

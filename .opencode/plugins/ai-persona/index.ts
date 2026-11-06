@@ -2,6 +2,12 @@ import { Plugin } from "@opencode/plugin";
 import { Error as ToolError } from "@opencode/plugin/promise/tool";
 import { evaluateGuards } from "../../../core/guards.ts";
 import { getActiveGuards } from "../../../core/memory.ts";
+import {
+  recordInterruption,
+  recordLearningConfirmation,
+  recordPermissionAsked,
+  recordPermissionReply,
+} from "../../../core/learning.ts";
 import { loadProfile } from "../../../core/profile.ts";
 import { processPrompt } from "../../../core/transition.ts";
 import { writeLastState } from "../../../core/state-store.ts";
@@ -75,16 +81,23 @@ export default Plugin.define({
     const controller = new AbortController();
     void (async () => {
       for await (const event of ctx.event.subscribe({
-        types: ["session.created", "permission.asked", "permission.replied"],
+        types: ["session.created", "session.execution.interrupted", "permission.asked", "permission.replied"],
         signal: controller.signal,
       })) {
         if (event.type === "session.created") {
           if (!event.data.parentID) writeLastState(event.data.location.directory, "init");
           continue;
         }
+        const projectRoot = event.location?.directory ?? ctx.location.project.canonical;
+        if (event.type === "session.execution.interrupted") {
+          recordInterruption(projectRoot, event.data.reason, event.id);
+          continue;
+        }
         if (event.type === "permission.asked") {
+          recordPermissionAsked(projectRoot, event.data.id, event.data.action, event.data.resources);
           console.info(`[ai-persona] permission.asked ${event.data.id} ${event.data.action}`);
         } else {
+          recordPermissionReply(projectRoot, event.data.requestID, event.data.reply);
           console.info(`[ai-persona] permission.replied ${event.data.requestID}`);
         }
       }
@@ -94,6 +107,7 @@ export default Plugin.define({
 
     await ctx.session.hook("prompt", async (event) => {
       const session = await ctx.session.get({ sessionID: event.sessionID });
+      recordLearningConfirmation(session.location.directory, event.prompt.text);
       const transition = processPrompt(session.location.directory, event.prompt.text);
       if (transition.hint) event.prompt.text = `${event.prompt.text}\n\n${transition.hint}`;
     });

@@ -129,6 +129,12 @@ function commandMentionsPath(command: string, projectRoot: string, protectedPath
   });
 }
 
+function commandContains(command: string, prohibited: string): boolean {
+  const escaped = prohibited.trim().replace(/\s+/g, " ").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (!escaped) return false;
+  return new RegExp(`(^|[^\\w./+-])${escaped}(?=$|[^\\w./+-])`, "i").test(command.replace(/\s+/g, " "));
+}
+
 function matchingProtectedPath(
   projectRoot: string,
   call: ToolCallForGuard,
@@ -147,6 +153,7 @@ function matches(guard: ActiveGuard, projectRoot: string, call: ToolCallForGuard
   switch (guard.definition.kind) {
     case "no_commit": return isCommitCall(call);
     case "no_push": return isPushCall(call);
+    case "deny_command": return Boolean(call.command && commandContains(call.command, guard.definition.command));
     case "protected_paths": return matchingProtectedPath(projectRoot, call, guard.definition.paths) !== null;
     case "required_mcp":
       return Boolean(call.mcpServer && normalizeMcpIdentity(call.mcpServer) !== normalizeMcpIdentity(guard.definition.server));
@@ -168,6 +175,8 @@ export function evaluateGuards(
       ? "Blocked by standing order: don't commit."
       : guard.definition.kind === "no_push"
         ? "Blocked by standing order: don't push."
+        : guard.definition.kind === "deny_command"
+          ? `Blocked by standing order: never run ${cleanOneLine(guard.definition.command)}.`
         : guard.definition.kind === "protected_paths"
           ? `Blocked by standing order: don't touch ${cleanOneLine(matchedPath ?? guard.definition.paths[0])}.`
           : `Blocked by standing order: use MCP ${cleanOneLine(guard.definition.server)} for MCP calls.`;

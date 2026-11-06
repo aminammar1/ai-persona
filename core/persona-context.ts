@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadProfile, parseProfileMarkdown } from "./profile.ts";
 import { getRecentMemories, type MemoryNote } from "./memory.ts";
+import { getLearnedHabits } from "./learning.ts";
 import type { PersonaProfile } from "./types.ts";
 
 const MAX_CONTEXT_CHARS = 800;
@@ -85,6 +86,7 @@ function renderMemories(notes: MemoryNote[]): string[] {
 export function getPersonaContext(projectRoot: string, task: string): string {
   const selected = profileSelection(projectRoot, task);
   const profile = loadProfile(projectRoot, selected);
-  const notes = getRecentMemories(projectRoot, 3);
-  return clip([...renderProfile(profile), ...renderMemories(notes)].join("\n"), MAX_CONTEXT_CHARS);
+  const habits = getLearnedHabits(projectRoot, 1).map((habit) => `Approved habit: ${clip(habit, MAX_NOTE_CHARS)}`);
+  const notes = getRecentMemories(projectRoot, 3 - habits.length);
+  return clip([...renderProfile(profile), ...habits, ...renderMemories(notes)].join("\n"), MAX_CONTEXT_CHARS);
 }

@@ -4,6 +4,13 @@ import * as z from "zod/v4";
 import { getPersonaContext } from "../core/persona-context.ts";
 import { proposeUpdate, recordCorrection } from "../core/memory.ts";
 import { confirmGuard, proposeGuard } from "../core/guards.ts";
+import {
+  considerCorrection,
+  listAppliedChanges,
+  listLearningSuggestions,
+  reviewLearningSuggestion,
+  undoAppliedChange,
+} from "../core/learning.ts";
 
 const projectRoot = process.cwd();
 
@@ -27,7 +34,12 @@ function createServer(): McpServer {
     },
     async ({ note }) => {
       recordCorrection(projectRoot, note);
-      return { content: [{ type: "text", text: "Correction saved for this project." }] };
+      const suggestionId = considerCorrection(projectRoot, note);
+      return {
+        content: [{ type: "text", text: suggestionId
+          ? `Correction saved. Repeated pattern created suggestion ${suggestionId}; nothing was applied.`
+          : "Correction saved. A single occurrence never creates or applies a suggestion." }],
+      };
     },
   );
 
@@ -87,6 +99,71 @@ function createServer(): McpServer {
         }],
       };
     },
+  );
+
+  server.registerTool(
+    "list_learning_suggestions",
+    {
+      description: "List up to three pending learning suggestions. Each requires a separate explicit yes or no.",
+      inputSchema: z.object({}),
+    },
+    async () => {
+      const suggestions = listLearningSuggestions(projectRoot, 3);
+      return {
+        content: [{ type: "text", text: suggestions.length
+          ? suggestions.map((item) => `${item.id}. ${item.change} Reason: ${item.reason}`).join("\n")
+          : "No pending learning suggestions." }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "review_learning_suggestion",
+    {
+      description: "Approve or reject one learning suggestion. Approval applies only that narrow change and records it for undo.",
+      inputSchema: z.object({ suggestionId: z.number().int().positive(), approved: z.boolean() }),
+    },
+    async ({ suggestionId, approved }) => {
+      const result = reviewLearningSuggestion(projectRoot, suggestionId, approved);
+      return {
+        content: [{ type: "text", text: !result.changed
+          ? result.confirmationRequired
+            ? `No matching developer confirmation was recorded. Ask for “yes ${suggestionId}” or “no ${suggestionId}” before reviewing it.`
+            : "No pending learning suggestion with that id was found."
+          : approved
+            ? `Suggestion applied as change ${result.changeId}. It can be undone with undo_change.`
+            : "Suggestion rejected; no change was made." }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "list_changes",
+    {
+      description: "Show up to three recent applied or undone learning changes.",
+      inputSchema: z.object({ beforeId: z.number().int().positive().optional() }),
+    },
+    async ({ beforeId }) => {
+      const changes = listAppliedChanges(projectRoot, 3, beforeId);
+      return {
+        content: [{ type: "text", text: changes.length
+          ? changes.map((change) => `${change.id}. ${change.details}: ${change.undoneAt ? "undone" : "active"}`).join("\n")
+          : "No learning changes have been applied." }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "undo_change",
+    {
+      description: "Undo one applied learning change by its change id.",
+      inputSchema: z.object({ changeId: z.number().int().positive() }),
+    },
+    async ({ changeId }) => ({
+      content: [{ type: "text", text: undoAppliedChange(projectRoot, changeId)
+        ? `Change ${changeId} undone; its log entry was retained.`
+        : "No active change with that id was found." }],
+    }),
   );
 
   return server;
