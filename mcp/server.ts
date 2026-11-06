@@ -12,7 +12,7 @@ import {
   undoAppliedChange,
 } from "../core/learning.ts";
 
-const projectRoot = process.cwd();
+const projectRoot = process.env.AI_PERSONA_PROJECT_ROOT ?? process.cwd();
 
 function createServer(): McpServer {
   const server = new McpServer({ name: "ai-persona", version: "0.1.0" });

@@ -12,29 +12,15 @@ ai-persona adapts how your coding agent works to your project and your prompts. 
 
 ## Demo
 
-*Illustrative example, not a benchmark.* Same task in both cases: “Fix the parser error in `src/parser.ts`, run the focused check, and push.” The project has a standing order: **don't push**.
+*Illustrative flow.* Same task and project in both cases.
 
-**Without ai-persona**
+> Fix the parser error in `src/parser.ts`, run the focused check, and push.
 
-Agent: “Should I run the check?”
+Standing order: **don't push**.
 
-Developer: “Yes, I already asked. Stop asking and fix the parser.”
-
-Agent: “Do you want me to push now?”
-
-Developer: “I said push, but my standing order says don't.”
-
-`git push` runs because the order was only text.
-
-**With ai-persona**
-
-Agent: “I’ll focus on the parser, fix it, and run the focused check.”
-
-Tool guard: “Blocked by standing order: don't push.”
-
-The fix and check are done. The push was blocked before it ran.
-
-Two fewer questions, two fewer interruptions, and the push is blocked.
+| Without ai-persona | With ai-persona |
+| --- | --- |
+| The agent asks whether to run the requested check, asks again about pushing, then runs `git push`. | The agent fixes and checks without asking again. The guard blocks `git push` before it runs. |
 
 ## How it works
 
@@ -58,7 +44,7 @@ The profile sets your baseline. Each state makes a small adjustment. A one word 
 npx skills add aminammar1/ai-persona
 ```
 
-Then open your project with your coding agent and ask it to run `persona-init`.
+Choose your coding agent and install the skills in this project. Then open the project with that agent and run `persona-init`. It prepares your profile, shows the setup plan, and asks before installing the runtime, hooks, and MCP server.
 
 ## Contributing
 
