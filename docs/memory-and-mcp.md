@@ -15,5 +15,14 @@ Each project's database is in that project's directory. `get_persona(task)` cann
 - `get_persona(task)`: return baseline dials, matching profile headings and an optional matching file under `profile/`, plus at most three notes.
 - `record_correction(note)`: save one concise correction for the current project.
 - `propose_update(change)`: save a pending suggestion; approval is still required before anyone applies it.
+- `propose_guard(rule)` and `confirm_guard(proposalId, accepted)`: parse a supported standing order, show its meaning once, then activate it only after explicit confirmation.
 
 `recordCompactionSummary(projectRoot, summary)` is an internal API for adapters to call at a verified compaction event. The OpenCode, Claude Code, and Codex adapters are not wired to it yet; each adapter must first be checked against its current official hook documentation.
+
+## Standing-order guards
+
+Confirmed guards are stored in the same project-local SQLite file and are checked by `checkGuard(projectRoot, call)` before an adapter runs a tool. Supported forms are `don't commit`, `don't push`, `don't touch <path>[, <path>...]`, and `use this MCP <name>`. A required-MCP guard blocks calls to other MCP servers; it leaves non-MCP tools alone. The check does not depend on persona state. Matching calls receive one single-line reason. Adapters must normalize tool identity, MCP server identity, shell command text, and target paths before calling it.
+
+The OpenCode v2 adapter at `adapters/opencode/index.ts` checks confirmed rules in the `execute.before` tool hook and raises OpenCode's `Tool.Error` with a one-line reason before execution. It uses the OpenCode project's canonical directory as the database boundary. Guards run for every call regardless of persona state. If the store or adapter check fails, the hook blocks the call rather than letting an unchecked call run. This adapter targets OpenCode 2.2.5; Claude Code and Codex pre-tool adapters are not wired yet.
+
+Register the adapter as a local OpenCode plugin by adding `"./adapters/opencode"` to the project's `plugins` list in `opencode.json`. OpenCode v2 resolves a local plugin directory's root `index.ts` automatically.

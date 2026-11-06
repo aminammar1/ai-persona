@@ -3,6 +3,7 @@ import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import * as z from "zod/v4";
 import { getPersonaContext } from "../core/persona-context.ts";
 import { proposeUpdate, recordCorrection } from "../core/memory.ts";
+import { confirmGuard, proposeGuard } from "../core/guards.ts";
 
 const projectRoot = process.cwd();
 
@@ -40,6 +41,50 @@ function createServer(): McpServer {
       const id = proposeUpdate(projectRoot, change);
       return {
         content: [{ type: "text", text: `Suggestion ${id} saved as pending. Nothing was changed; ask the developer before applying it.` }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "propose_guard",
+    {
+      description: "Parse a plain-language standing order and save it pending explicit developer confirmation.",
+      inputSchema: z.object({ rule: z.string().trim().min(1).max(500) }),
+    },
+    async ({ rule }) => {
+      const proposal = proposeGuard(projectRoot, rule);
+      if (!proposal) {
+        return {
+          content: [{ type: "text", text: "I couldn't parse that rule. Use a clear don't commit, don't push, don't touch <path>, or use this MCP <name> instruction." }],
+          isError: true,
+        };
+      }
+      return {
+        content: [{
+          type: "text",
+          text: `Parsed as: ${proposal.parsed.rule} Confirm with the developer once before activating (proposal ${proposal.proposalId}).`,
+        }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "confirm_guard",
+    {
+      description: "Activate or reject a previously shown standing-order proposal after the developer answers.",
+      inputSchema: z.object({ proposalId: z.number().int().positive(), accepted: z.boolean() }),
+    },
+    async ({ proposalId, accepted }) => {
+      const changed = confirmGuard(projectRoot, proposalId, accepted);
+      return {
+        content: [{
+          type: "text",
+          text: !changed
+            ? "No pending standing-order proposal with that id was found."
+            : accepted
+              ? "Standing order activated for this project. It will apply in every persona state."
+              : "Standing-order proposal rejected; no guard was activated.",
+        }],
       };
     },
   );

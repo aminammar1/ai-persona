@@ -8,5 +8,5 @@
     "allowImportingTsExtensions": true,
     "types": ["node"]
   },
-  "include": ["core/**/*.ts", "mcp/**/*.ts"]
+  "include": ["adapters/**/*.ts", "core/**/*.ts", "mcp/**/*.ts"]
 }

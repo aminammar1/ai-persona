@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import Database from "better-sqlite3";
 
@@ -16,6 +16,18 @@ export interface MemoryNote {
   content: string;
   updatedAt: string;
   occurrences: number;
+}
+
+export type GuardDefinition =
+  | { kind: "no_commit" }
+  | { kind: "no_push" }
+  | { kind: "protected_paths"; paths: string[] }
+  | { kind: "required_mcp"; server: string };
+
+export interface ActiveGuard {
+  id: number;
+  rule: string;
+  definition: GuardDefinition;
 }
 
 const MEMORY_DIRECTORY = ".ai-persona";
@@ -61,6 +73,23 @@ function withDatabase<T>(projectRoot: string, action: (database: Database.Databa
         status TEXT NOT NULL DEFAULT 'pending'
           CHECK (status IN ('pending', 'approved', 'rejected')),
         created_at TEXT NOT NULL
+      ) STRICT;
+
+      CREATE TABLE IF NOT EXISTS guard_proposals (
+        id INTEGER PRIMARY KEY,
+        rule_text TEXT NOT NULL,
+        definition_json TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending'
+          CHECK (status IN ('pending', 'active', 'rejected')),
+        created_at TEXT NOT NULL
+      ) STRICT;
+
+      CREATE TABLE IF NOT EXISTS guards (
+        id INTEGER PRIMARY KEY,
+        rule_text TEXT NOT NULL,
+        definition_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        UNIQUE (definition_json)
       ) STRICT;
     `);
     return action(database);
@@ -141,4 +170,66 @@ export function getRecentMemories(projectRoot: string, limit = 3): MemoryNote[] 
     ORDER BY CASE kind WHEN 'open_problem' THEN 0 ELSE 1 END, updated_at DESC
     LIMIT ?
   `).all(safeLimit) as MemoryNote[]);
+}
+
+export function saveGuardProposal(
+  projectRoot: string,
+  rule: string,
+  definition: GuardDefinition,
+): number {
+  return withDatabase(projectRoot, (database) => {
+    const result = database.prepare(`
+      INSERT INTO guard_proposals (rule_text, definition_json, created_at)
+      VALUES (?, ?, ?)
+    `).run(cleanNote(rule), JSON.stringify(definition), new Date().toISOString());
+    return Number(result.lastInsertRowid);
+  });
+}
+
+export function confirmGuardProposal(projectRoot: string, proposalId: number, accepted: boolean): boolean {
+  return withDatabase(projectRoot, (database) => {
+    const finish = database.transaction(() => {
+      const proposal = database.prepare(`
+        SELECT id, rule_text AS rule, definition_json AS definitionJson
+        FROM guard_proposals
+        WHERE id = ? AND status = 'pending'
+      `).get(proposalId) as { id: number; rule: string; definitionJson: string } | undefined;
+      if (!proposal) return false;
+
+      if (accepted) {
+        database.prepare(`
+          INSERT OR IGNORE INTO guards (rule_text, definition_json, created_at)
+          VALUES (?, ?, ?)
+        `).run(proposal.rule, proposal.definitionJson, new Date().toISOString());
+      }
+      database.prepare("UPDATE guard_proposals SET status = ? WHERE id = ?")
+        .run(accepted ? "active" : "rejected", proposalId);
+      return true;
+    });
+    return finish();
+  });
+}
+
+export function getActiveGuards(projectRoot: string): ActiveGuard[] {
+  const file = memoryPath(projectRoot);
+  if (!existsSync(file)) return [];
+  const database = new Database(file, { readonly: true });
+  try {
+    const table = database.prepare(
+      "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'guards'",
+    ).get();
+    if (!table) return [];
+    const rows = database.prepare(`
+      SELECT id, rule_text AS rule, definition_json AS definitionJson
+      FROM guards
+      ORDER BY id ASC
+    `).all() as Array<{ id: number; rule: string; definitionJson: string }>;
+    return rows.map((row) => ({
+      id: row.id,
+      rule: row.rule,
+      definition: JSON.parse(row.definitionJson) as GuardDefinition,
+    }));
+  } finally {
+    database.close();
+  }
 }
