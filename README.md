@@ -18,21 +18,20 @@ Your coding agent, shaped around how you work. Five states adapt its style to yo
 
 The profile sets your baseline. State hints appear only on changes. A one word override works, and built in modes and permissions stay in control. See [agent coverage and hook gaps](docs/agent-hooks.md).
 
-## Real project run
+## Real project demo
 
-Same read only task in `/home/amine/code-source/bank-api-test`:
+Same prompt and Go source snapshot in `/home/amine/code-source/bank-api-test`, using OpenCode with the same free model:
 
-> Choose one existing API endpoint. Trace the request through the code, explain one edge case, and do not edit files.
+> Choose one existing API endpoint in this project. Trace how a request moves through the code and explain what happens, including one edge case. Do not edit any files. Use ai-persona context if it is available, and keep the explanation focused.
 
-| Agent | Observed result |
+| Run | Observed result |
 | --- | --- |
-| OpenCode | Called `get_persona`, selected `explore`, traced `GET /account/{id}` through JWT checks and PostgreSQL, and left source files unchanged. |
-| Codex | Classified the prompt as `explore` and traced the endpoint. Its project MCP did not appear in the session. A temporary server test reached the tool, but the session's no approval policy refused the call. |
-| Claude Code | The skills and adapter setup completed. Its prompt hook returned an `explore` hint, but the requested `ccfree 3` run could not start because its configured model returned a 404. |
+| Without ai-persona | Traced `GET /account/{id}` through JWT middleware and PostgreSQL. Chose malformed ID as the edge case and explained its `403` response. No profile context was available. |
+| With ai-persona | Called `get_persona`, selected `explore`, and traced the same route. It also surfaced the unchecked JWT claim assertion and the custom expiry claim. No files changed. |
 
-Guard check: OpenCode blocked `git push --dry-run /dev/null HEAD` before execution under a temporary `don't push` rule. The test rule was removed afterward.
+Both answers were correct and asked no follow up questions. This single task shows added project context and exploration, not fewer prompts. In a separate guard check, OpenCode blocked `git push --dry-run /dev/null HEAD` before execution under a temporary `don't push` rule. The test rule was removed afterward.
 
-This records a real smoke run, not a before and after benchmark. The Codex project must be trusted and its hooks reviewed with `/hooks`. Claude needs an available model in the local `ccfree 3` setup.
+Codex also traced the endpoint, but its project MCP did not appear in the session. A temporary server test reached the tool, but the session's no approval policy refused the call. Claude's prompt hook returned an `explore` hint, but the requested `ccfree 3` run could not start because its configured model returned a 404. Codex project settings require trust and hook review with `/hooks`; Claude needs an available model in the local setup.
 
 ## Install
 
