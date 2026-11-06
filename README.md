@@ -18,20 +18,13 @@ Your coding agent, shaped around how you work. Five states adapt its style to yo
 
 The profile sets your baseline. State hints appear only on changes. A one word override works, and built in modes and permissions stay in control. See [agent coverage and hook gaps](docs/agent-hooks.md).
 
-## Real project demo
+## Demo
 
-Same task, run with each supported agent:
+Try this prompt in any codebase:
 
-> Choose one existing API endpoint in this project. Trace how a request moves through the code and explain what happens, including one edge case. Do not edit any files. Use ai-persona context if it is available, and keep the explanation focused.
+> Trace one existing request from its entry point through the relevant code. Explain what happens and include one edge case. Do not edit files.
 
-| Run | Observed result |
-| --- | --- |
-| OpenCode without ai-persona | Traced `GET /account/{id}` through JWT middleware and PostgreSQL. Explained that a malformed ID returns `403`. |
-| OpenCode with ai-persona | Loaded project context, switched to `explore`, and traced the same route. Also found an unchecked JWT claim assertion and the custom expiry claim. No files changed. |
-| Codex | Traced the same endpoint and edge case. The persona MCP was not available in the session, so this run did not verify persona context. |
-| Claude Code | The prompt hook selected `explore`. A complete agent response could not be verified because the configured model returned an error. |
-
-The OpenCode comparison shows the added project context. The OpenCode tool guard also blocked a push attempt before it ran.
+The agent uses the project's profile and relevant notes to shape the explanation. A prompt asking for a walkthrough moves the persona toward explore, while the task itself stays unchanged. Standing orders continue to guard matching tool calls in every state.
 
 ## Install
 
