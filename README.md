@@ -1,54 +1,57 @@
 # ai-persona
 
-### Your coding agent, shaped around how you work.
+<p align="center"><img src="docs/images/ai-persona-hero.png" alt="ai-persona adapts coding agents across init, flow, debug, explore, and careful states" width="100%"></p>
 
-[![OpenCode](https://img.shields.io/badge/OpenCode-adapter-5577dd)](docs/agent-hooks.md#opencode-v225)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-adapter-d97757)](docs/agent-hooks.md#claude-code)
-[![Codex](https://img.shields.io/badge/Codex-adapter-111111)](docs/agent-hooks.md#codex)
-[![Skills](https://skills.sh/b/aminammar1/ai-persona)](https://skills.sh/aminammar1/ai-persona)
-[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+<p align="center">
+  <a href="https://opencode.ai"><img alt="OpenCode" src="https://img.shields.io/badge/OpenCode-adapter-5577dd"></a>
+  <a href="https://code.claude.com"><img alt="Claude Code" src="https://img.shields.io/badge/Claude%20Code-adapter-d97757"></a>
+  <a href="https://openai.com/codex"><img alt="Codex" src="https://img.shields.io/badge/Codex-adapter-111111"></a>
+  <a href="https://skills.sh/aminammar1/ai-persona"><img alt="Agent Skills" src="https://img.shields.io/badge/Agent%20Skills-installable-8a63d2"></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
+</p>
 
-ai-persona adapts how your coding agent works to your project and your prompts. The states are init, flow, debug, explore, and careful. They adjust verbosity, autonomy, caution, and exploration while your task stays yours. Hooks enforce standing orders, and project memory stores short notes instead of transcripts.
-
-## Demo
-
-*Illustrative flow.* Same task and project in both cases.
-
-> Fix the parser error in `src/parser.ts`, run the focused check, and push.
-
-Standing order: **don't push**.
-
-| Without ai-persona | With ai-persona |
-| --- | --- |
-| The agent asks whether to run the requested check, asks again about pushing, then runs `git push`. | The agent fixes and checks without asking again. The guard blocks `git push` before it runs. |
+Your coding agent, shaped around how you work. Five states adapt its style to your project and prompts while keeping your task intact. Hooks enforce standing orders. Memory stores short notes, never transcripts.
 
 ## How it works
 
-<p align="center"><img src="docs/images/persona-flow.svg" alt="A prompt passes through a rule based detector and profile dials. Project memory adds short notes. A guard checks supported tool calls before they run." width="760"></p>
+<p align="center"><img src="docs/images/persona-flow.svg" alt="Prompts pass through a rule based detector and profile dials. Memory supplies short notes and guards check tool calls." width="760"></p>
 
-The profile sets your baseline. Each state makes a small adjustment. A one word override works at any time, and the adapter respects the agent's built in modes. A hint appears only when the state changes. Hook gaps and limits are listed in the [agent coverage notes](docs/agent-hooks.md).
+The profile sets your baseline. State hints appear only on changes. A one word override works, and built in modes and permissions stay in control. See [agent coverage and hook gaps](docs/agent-hooks.md).
 
-## Skills
+## Real project run
 
-`persona-init` creates a project profile and sets up the supported adapter with your permission.
+Same read only task in `/home/amine/code-source/bank-api-test`:
 
-`persona-mode` shows or changes the current state.
+> Choose one existing API endpoint. Trace the request through the code, explain one edge case, and do not edit files.
 
-`persona-rules` adds a standing order and confirms how it was understood.
+| Agent | Observed result |
+| --- | --- |
+| OpenCode | Called `get_persona`, selected `explore`, traced `GET /account/{id}` through JWT checks and PostgreSQL, and left source files unchanged. |
+| Codex | Classified the prompt as `explore` and traced the endpoint. Its project MCP did not appear in the session. A temporary server test reached the tool, but the session's no approval policy refused the call. |
+| Claude Code | The skills and adapter setup completed. Its prompt hook returned an `explore` hint, but the requested `ccfree 3` run could not start because its configured model returned a 404. |
 
-`persona-learn` reviews suggested profile or rule changes. Nothing is applied without your approval.
+Guard check: OpenCode blocked `git push --dry-run /dev/null HEAD` before execution under a temporary `don't push` rule. The test rule was removed afterward.
 
-## Installation
+This records a real smoke run, not a before and after benchmark. The Codex project must be trusted and its hooks reviewed with `/hooks`. Claude needs an available model in the local `ccfree 3` setup.
+
+## Install
 
 ```bash
 npx skills add aminammar1/ai-persona
 ```
 
-Choose your coding agent and install the skills in this project. Then open the project with that agent and run `persona-init`. It prepares your profile, shows the setup plan, and asks before installing the runtime, hooks, and MCP server.
+Select all four skills, open your project in the agent, then run `persona-init`. It scans the project, creates `profile.md`, shows the setup plan, and asks before installing hooks and MCP.
 
-## Contributing
+| Skill | Use it to |
+| --- | --- |
+| `persona-init` | Create a profile and configure the current agent |
+| `persona-mode` | Show or switch the current state |
+| `persona-rules` | Add a standing order in plain language |
+| `persona-learn` | Approve or reject a suggested update |
 
-PRs are welcome for a project stack template, persona preset, or agent adapter. See [CONTRIBUTING.md](CONTRIBUTING.md).
+## Contribute
+
+PRs are welcome for a stack template, persona preset, or agent adapter. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

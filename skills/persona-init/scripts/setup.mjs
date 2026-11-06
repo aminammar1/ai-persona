@@ -189,8 +189,11 @@ try {
   }
 
   process.stdout.write(`ai-persona runtime installed for ${agent}. Restart the agent and use persona-mode to check the active state.\n`);
-  if (agent === "codex" && codexHooksDisabled(project)) {
-    process.stdout.write("Warning: hooks are disabled in your Codex config. The adapter is installed but its hooks will not run; review [features].hooks before relying on guards.\n");
+  if (agent === "codex") {
+    process.stdout.write("Codex loads project settings only after you trust the project. Review and trust ai-persona hooks with /hooks before relying on them. Setup does not change project trust.\n");
+    if (codexHooksDisabled(project)) {
+      process.stdout.write("Warning: hooks are disabled in your Codex config. The adapter is installed but its hooks will not run; review [features].hooks before relying on guards.\n");
+    }
   }
 } catch (error) {
   rmSync(staging, { recursive: true, force: true });
