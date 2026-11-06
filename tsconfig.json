@@ -8,5 +8,5 @@
     "allowImportingTsExtensions": true,
     "types": ["node"]
   },
-  "include": [".opencode/**/*.ts", "core/**/*.ts", "mcp/**/*.ts"]
+  "include": [".opencode/**/*.ts", "core/**/*.ts", "hooks/**/*.ts", "mcp/**/*.ts"]
 }

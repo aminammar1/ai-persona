@@ -1,0 +1,75 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "AI_PERSONA_AGENT=codex npm --prefix \"${PLUGIN_ROOT}\" run --silent hook"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "AI_PERSONA_AGENT=codex npm --prefix \"${PLUGIN_ROOT}\" run --silent hook"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "AI_PERSONA_AGENT=codex npm --prefix \"${PLUGIN_ROOT}\" run --silent hook"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "AI_PERSONA_AGENT=codex npm --prefix \"${PLUGIN_ROOT}\" run --silent hook"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "AI_PERSONA_AGENT=codex npm --prefix \"${PLUGIN_ROOT}\" run --silent hook"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "AI_PERSONA_AGENT=codex npm --prefix \"${PLUGIN_ROOT}\" run --silent hook"
+          }
+        ]
+      }
+    ],
+    "Interrupt": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "AI_PERSONA_AGENT=codex npm --prefix \"${PLUGIN_ROOT}\" run --silent hook"
+          }
+        ]
+      }
+    ]
+  }
+}
