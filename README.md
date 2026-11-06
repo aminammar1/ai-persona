@@ -10,7 +10,7 @@
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
 </p>
 
-Your coding agent, shaped around how you work. Five states adapt its style to your project and prompts while keeping your task intact. Hooks enforce standing orders. Memory stores short notes, never transcripts.
+Your coding agent, shaped around how you work. Five states adapt its style to your project and prompts while keeping your task intact. Hooks check tool calls. Memory stores short notes, never transcripts.
 
 ## How it works
 
@@ -20,18 +20,18 @@ The profile sets your baseline. State hints appear only on changes. A one word o
 
 ## Real project demo
 
-Same prompt and Go source snapshot in `/home/amine/code-source/bank-api-test`, using OpenCode with the same free model:
+Same task, run with each supported agent:
 
 > Choose one existing API endpoint in this project. Trace how a request moves through the code and explain what happens, including one edge case. Do not edit any files. Use ai-persona context if it is available, and keep the explanation focused.
 
 | Run | Observed result |
 | --- | --- |
-| Without ai-persona | Traced `GET /account/{id}` through JWT middleware and PostgreSQL. Chose malformed ID as the edge case and explained its `403` response. No profile context was available. |
-| With ai-persona | Called `get_persona`, selected `explore`, and traced the same route. It also surfaced the unchecked JWT claim assertion and the custom expiry claim. No files changed. |
+| OpenCode without ai-persona | Traced `GET /account/{id}` through JWT middleware and PostgreSQL. Explained that a malformed ID returns `403`. |
+| OpenCode with ai-persona | Loaded project context, switched to `explore`, and traced the same route. Also found an unchecked JWT claim assertion and the custom expiry claim. No files changed. |
+| Codex | Traced the same endpoint and edge case. The persona MCP was not available in the session, so this run did not verify persona context. |
+| Claude Code | The prompt hook selected `explore`. A complete agent response could not be verified because the configured model returned an error. |
 
-Both answers were correct and asked no follow up questions. This single task shows added project context and exploration, not fewer prompts. In a separate guard check, OpenCode blocked `git push --dry-run /dev/null HEAD` before execution under a temporary `don't push` rule. The test rule was removed afterward.
-
-Codex also traced the endpoint, but its project MCP did not appear in the session. A temporary server test reached the tool, but the session's no approval policy refused the call. Claude's prompt hook returned an `explore` hint, but the requested `ccfree 3` run could not start because its configured model returned a 404. Codex project settings require trust and hook review with `/hooks`; Claude needs an available model in the local setup.
+The OpenCode comparison shows the added project context. The OpenCode tool guard also blocked a push attempt before it ran.
 
 ## Install
 
@@ -39,14 +39,7 @@ Codex also traced the endpoint, but its project MCP did not appear in the sessio
 npx skills add aminammar1/ai-persona
 ```
 
-Select all four skills, open your project in the agent, then run `persona-init`. It scans the project, creates `profile.md`, shows the setup plan, and asks before installing hooks and MCP.
-
-| Skill | Use it to |
-| --- | --- |
-| `persona-init` | Create a profile and configure the current agent |
-| `persona-mode` | Show or switch the current state |
-| `persona-rules` | Add a standing order in plain language |
-| `persona-learn` | Approve or reject a suggested update |
+Install all four skills, open your project in the agent, then run `persona-init`. It scans the project, creates `profile.md`, shows the setup plan, and asks before installing hooks and MCP.
 
 ## Contribute
 
