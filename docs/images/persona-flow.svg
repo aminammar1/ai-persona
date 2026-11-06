@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 540" role="img" aria-labelledby="title description">
+  <title id="title">How ai-persona shapes an agent's work</title>
+  <desc id="description">A prompt passes through a rule based detector and profile based dials before the agent receives a short hint. Project memory adds relevant notes. Every tool call passes through a guard that can allow or block it.</desc>
+  <defs>
+    <linearGradient id="canvas" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#171d27"/>
+      <stop offset="1" stop-color="#10151c"/>
+    </linearGradient>
+    <linearGradient id="warm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#512516"/>
+      <stop offset="1" stop-color="#351b17"/>
+    </linearGradient>
+    <linearGradient id="cool" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#103e39"/>
+      <stop offset="1" stop-color="#102d34"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M1 1l7 4-7 4" fill="none" stroke="#8793a3" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .eyebrow { fill: #8793a3; font-size: 12px; font-weight: 700; letter-spacing: 2px; }
+      .title { fill: #f3f5f8; font-size: 23px; font-weight: 650; }
+      .sub { fill: #b5beca; font-size: 14px; }
+      .small { fill: #929ead; font-size: 12px; }
+      .card { stroke-width: 1.2; }
+      .connector { fill: none; stroke: #8793a3; stroke-width: 1.8; marker-end: url(#arrow); }
+      .feed { fill: none; stroke: #6db8a2; stroke-width: 1.7; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1120" height="540" rx="24" fill="url(#canvas)"/>
+  <circle cx="980" cy="55" r="180" fill="#24394d" opacity=".12"/>
+  <circle cx="115" cy="480" r="150" fill="#432619" opacity=".1"/>
+  <text x="48" y="42" class="eyebrow">PERSONALIZED WORKFLOW</text>
+
+  <g>
+    <rect x="40" y="76" width="218" height="112" rx="18" fill="#191f28" stroke="#46515f" class="card"/>
+    <text x="149" y="119" text-anchor="middle" class="title">Prompt</text>
+    <text x="149" y="151" text-anchor="middle" class="sub">Your task, in your words</text>
+  </g>
+  <path d="M260 132h36" class="connector"/>
+  <g>
+    <rect x="304" y="76" width="224" height="112" rx="18" fill="url(#warm)" stroke="#c87955" class="card"/>
+    <text x="416" y="119" text-anchor="middle" class="title" fill="#ffe2d3">Detector</text>
+    <text x="416" y="149" text-anchor="middle" class="sub" fill="#edb29a">Plain rules, no LLM</text>
+    <text x="416" y="169" text-anchor="middle" class="small">A one word override also works</text>
+  </g>
+  <path d="M530 132h36" class="connector"/>
+  <g>
+    <rect x="574" y="76" width="224" height="112" rx="18" fill="url(#warm)" stroke="#c87955" class="card"/>
+    <text x="686" y="119" text-anchor="middle" class="title" fill="#ffe2d3">Dials</text>
+    <text x="686" y="149" text-anchor="middle" class="sub" fill="#edb29a">Profile baseline, small shift</text>
+    <text x="686" y="169" text-anchor="middle" class="small">Verbosity, autonomy, caution, exploration</text>
+  </g>
+  <path d="M800 132h36" class="connector"/>
+  <g>
+    <rect x="844" y="76" width="236" height="112" rx="18" fill="#191f28" stroke="#46515f" class="card"/>
+    <text x="962" y="119" text-anchor="middle" class="title">Agent</text>
+    <text x="962" y="149" text-anchor="middle" class="sub">One short hint on change</text>
+    <text x="962" y="169" text-anchor="middle" class="small">Task and built in controls stay yours</text>
+  </g>
+
+  <path d="M686 234v-36" class="feed"/>
+  <g>
+    <rect x="558" y="234" width="256" height="78" rx="16" fill="url(#cool)" stroke="#4da994" class="card"/>
+    <text x="686" y="266" text-anchor="middle" fill="#b7eadc" font-size="17" font-weight="650">Project profile</text>
+    <text x="686" y="291" text-anchor="middle" fill="#8fd3bd" font-size="13">Baseline dials and trusted notes</text>
+  </g>
+  <path d="M962 234v-36" class="feed"/>
+  <g>
+    <rect x="834" y="234" width="256" height="78" rx="16" fill="url(#cool)" stroke="#4da994" class="card"/>
+    <text x="962" y="266" text-anchor="middle" fill="#b7eadc" font-size="17" font-weight="650">SQLite memory</text>
+    <text x="962" y="291" text-anchor="middle" fill="#8fd3bd" font-size="13">Short notes, never transcripts</text>
+  </g>
+
+  <text x="48" y="367" class="eyebrow">EVERY TOOL CALL, IN EVERY STATE</text>
+  <g>
+    <rect x="164" y="394" width="230" height="94" rx="17" fill="#191f28" stroke="#46515f" class="card"/>
+    <text x="279" y="432" text-anchor="middle" class="title" font-size="18">Tool call</text>
+    <text x="279" y="459" text-anchor="middle" class="sub">Checked before it runs</text>
+  </g>
+  <path d="M396 441h58" class="connector"/>
+  <g>
+    <rect x="462" y="394" width="230" height="94" rx="17" fill="url(#warm)" stroke="#c87955" class="card"/>
+    <text x="577" y="432" text-anchor="middle" fill="#ffe2d3" font-size="18" font-weight="650">Guard</text>
+    <text x="577" y="459" text-anchor="middle" fill="#edb29a" class="sub">Matches the standing orders</text>
+  </g>
+  <path d="M694 441h58" class="connector"/>
+  <g>
+    <rect x="760" y="394" width="230" height="94" rx="17" fill="#191f28" stroke="#46515f" class="card"/>
+    <text x="875" y="432" text-anchor="middle" class="title" font-size="18">Allow or block</text>
+    <text x="875" y="459" text-anchor="middle" class="sub">A one line reason returns</text>
+  </g>
+</svg>

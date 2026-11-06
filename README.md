@@ -1,13 +1,19 @@
-`npx skills add aminammar1/ai-persona`
+<p align="center"><code>npx skills add aminammar1/ai-persona</code></p>
 
-# ai-persona
+<h1 align="center">ai-persona</h1>
 
-[![OpenCode adapter](https://img.shields.io/badge/OpenCode-adapter-5577dd)](docs/agent-hooks.md#opencode-v225)
-[![Claude Code adapter](https://img.shields.io/badge/Claude%20Code-adapter-d97757)](docs/agent-hooks.md#claude-code)
-[![Codex adapter](https://img.shields.io/badge/Codex-adapter-111111)](docs/agent-hooks.md#codex)
-[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+<p align="center">Your coding agent, shaped around how you work.</p>
 
-Personalize **how** your coding agent works—not what you asked it to do. Project profiles and five prompt-driven states tune verbosity, autonomy, caution, and exploration. Hooks enforce standing orders; SQLite keeps short, project-local notes without transcripts. OpenCode is the primary adapter, with Claude Code and Codex adapters.
+<p align="center">
+  <a href="docs/agent-hooks.md#opencode-v225"><img alt="OpenCode adapter" src="https://img.shields.io/badge/OpenCode-adapter-5577dd"></a>
+  <a href="docs/agent-hooks.md#claude-code"><img alt="Claude Code adapter" src="https://img.shields.io/badge/Claude%20Code-adapter-d97757"></a>
+  <a href="docs/agent-hooks.md#codex"><img alt="Codex adapter" src="https://img.shields.io/badge/Codex-adapter-111111"></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
+</p>
+
+<p align="center"><img src="docs/images/persona-flow.svg" alt="A prompt flows through a rule based detector and profile dials to the agent. Project memory adds short notes. A guard checks every supported tool call before it runs." width="100%"></p>
+
+Personalize how your agent works without changing your task. Five prompt driven states shift verbosity, autonomy, caution, and exploration around a project profile. Hooks enforce standing orders. SQLite keeps short project notes, never transcripts. Learning changes require your approval.
 
 ## Demo
 
@@ -15,27 +21,23 @@ Personalize **how** your coding agent works—not what you asked it to do. Proje
 
 **Without ai-persona**
 
-- Agent: “Should I run the check?”
-- Developer *(interrupts)*: “Yes, I already asked. Stop asking and fix the parser.”
-- Agent: “Do you want me to push now?”
-- Developer *(interrupts)*: “I said push, but my standing order says don't.”
-- `git push` runs; the standing order was only text.
+* Agent: “Should I run the check?”
+* Developer *(interrupts)*: “Yes, I already asked. Stop asking and fix the parser.”
+* Agent: “Do you want me to push now?”
+* Developer *(interrupts)*: “I said push, but my standing order says don't.”
+* `git push` runs; the standing order was only text.
 
 **With ai-persona**
 
-- Agent: “I’ll focus on the parser, fix it, and run the focused check.”
-- Tool guard: “Blocked by standing order: don't push.”
-- Agent: “The fix and check are done. The push was blocked.”
+* Agent: “I’ll focus on the parser, fix it, and run the focused check.”
+* Tool guard: “Blocked by standing order: don't push.”
+* Agent: “The fix and check are done. The push was blocked.”
 
-Here, ai-persona avoids the two extra prompts and developer interruptions, and blocks the push before it runs. See [verified hook coverage and gaps](docs/agent-hooks.md).
-
-## Get started
-
-Run `persona-init` to scan the project, draft `profile.md`, and ask before setting up supported hooks or MCP. Codex hooks require the feature enabled and user trust review. See the [profile template](templates/profile.md), [memory and MCP](docs/memory-and-mcp.md), and the four skills: `persona-init`, `persona-mode`, `persona-rules`, and `persona-learn`.
+The example shows two fewer questions, two fewer interruptions, and a push blocked before it runs. Read the [hook coverage and limits](docs/agent-hooks.md), then run `persona-init` to set up your project.
 
 ## Contributing
 
-PRs welcome for a stack template, persona preset, or agent adapter. See [CONTRIBUTING.md](CONTRIBUTING.md).
+PRs are welcome for a stack template, persona preset, or agent adapter. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
