@@ -18,6 +18,10 @@
 
 - Preserve:
 
+## Habit nudge
+
+- After code changes, run a relevant command from Main commands.
+
 ## Baseline dials
 
 - Verbosity: balanced

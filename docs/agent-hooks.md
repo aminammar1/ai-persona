@@ -4,7 +4,7 @@ These lists come from the official docs read on 2026-11-06. Hook availability an
 
 ## OpenCode v2.2.5
 
-The installed OpenCode version is `2.2.5`. Its official v2 plugin API exposes these hooks:
+`opencode --version` reported `opencode v2.2.5`. The official v2 plugin API exposes these hooks:
 
 - Tool: `execute.before`, `execute.after`.
 - Shell: `create.before`.
@@ -12,9 +12,13 @@ The installed OpenCode version is `2.2.5`. Its official v2 plugin API exposes th
 - Session: `prompt`, `context`, `compaction`, `generate`, `title`, `model.request`, `http.request`, `http.response`, `experimental.ws.handshake`, `experimental.ws.send`, `experimental.ws.receive`, `retry`, `experimental.idle`.
 - AI SDK: `sdk`, `language`.
 
-The standing-order adapter uses `ctx.tool.hook("execute.before", ...)`, which can inspect the effective tool name and input. It throws OpenCode's `Tool.Error` with the guard's one-line reason to reject the call before execution. `ctx.mcp.list()` identifies configured MCP server names for required-MCP guards. The project plugin uses `ctx.location.project.canonical` to select the current project's database.
+The per-prompt hook is `ctx.session.hook("prompt", ...)`. It sees an incoming user prompt once at admission, before attachment and skill resolution. It does not see synthetic messages, shell messages, compaction controls, or move controls. The adapter runs the detector there and appends a hint only when the state changes.
 
-Sources: [Plugin overview](https://opencode.ai/v2/docs/build/plugins/), [Server plugin API](https://opencode.ai/v2/docs/build/plugins/server), [MCP servers and tool names](https://opencode.ai/v2/docs/mcp-servers).
+`ctx.event.subscribe()` exposes lifecycle events including `session.created`, `session.idle`, `permission.asked`, `permission.replied`, and `session.compaction.ended`. `session.compacted` is not an event name in the v2.2.5 API. `file.edited` is also absent from the v2 API; `filesystem.changed` is a different event. Per instruction, neither is substituted: compaction memory saving and a `file.edited` listener remain unwired.
+
+The adapter uses `ctx.tool.hook("execute.before", ...)` for guards and `execute.after` to add the profile's habit nudge to successful file-edit tool results. Permission events are logged without changing the permission decision. The TUI plugin listens to `session.idle`, showing an in-app toast and a system notification when OpenCode is blurred.
+
+Sources: [Plugin overview](https://opencode.ai/v2/docs/build/plugins/), [Server plugin API](https://opencode.ai/v2/docs/build/plugins/server), [TUI plugin API](https://opencode.ai/v2/docs/build/plugins/cli/), [MCP servers and tool names](https://opencode.ai/v2/docs/mcp-servers).
 
 ## Claude Code
 

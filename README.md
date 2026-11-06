@@ -6,7 +6,7 @@ Your AI coding agent, adapted to you. ai-persona uses small prompt-driven person
 
 Your AI coding agent, adapted to you. Prompt-driven persona states, enforced standing orders, and per-project memory for OpenCode, Claude Code and Codex.
 
-The shared TypeScript core provides profile loading, state detection, dials, last-state persistence, project-local SQLite memory, and standing-order guard checks. The MCP server exposes the persona and guard management tools over stdio. OpenCode v2 enforces confirmed guards through a pre-tool hook; Claude Code and Codex adapters remain future work.
+The shared TypeScript core provides profile loading, state detection, dials, last-state persistence, project-local SQLite memory, and standing-order guard checks. The MCP server exposes persona and guard management tools over stdio. The OpenCode v2 plugin lives in `.opencode/plugins/ai-persona/`; Claude Code and Codex adapters remain future work.
 
 Claude Code marketplace install: `claude plugin marketplace add aminammar1/ai-persona`, then `claude plugin install ai-persona@ai-persona-marketplace`.
 
@@ -17,7 +17,7 @@ Claude Code marketplace install: `claude plugin marketplace add aminammar1/ai-pe
 - `persona-rules`: add a confirmed standing order.
 - `persona-learn`: review suggested profile changes.
 
-See [docs/agent-hooks.md](docs/agent-hooks.md) for hook sets verified from current official agent documentation.
+See [docs/agent-hooks.md](docs/agent-hooks.md) for hook sets verified from current official agent documentation, including OpenCode's unsupported lifecycle event names.
 
 ## Core
 
