@@ -140,7 +140,10 @@ if (!["opencode", "claude", "codex"].includes(agent)) throw new Error("Choose --
 if (!available("git")) throw new Error("Git is required to fetch the runtime.");
 if (!available("npm")) throw new Error("npm is required to install runtime dependencies.");
 if (agent === "opencode" && !available("opencode", ["--version"])) throw new Error("OpenCode must be installed before enabling its adapter.");
-if (existsSync(runtime) || existsSync(staging)) throw new Error("Runtime already exists. Refusing to replace it.");
+if (existsSync(staging)) throw new Error("A runtime installation is already in progress. Remove the stale staging directory before retrying.");
+if (existsSync(runtime) && (!existsSync(join(runtime, "package.json")) || !existsSync(join(runtime, "node_modules", "tsx", "dist", "cli.mjs")))) {
+  throw new Error("An incomplete runtime already exists. Repair or remove it before configuring another adapter.");
+}
 if (agent === "opencode" && existsSync(openCodePlugin)) throw new Error(".opencode/plugins/ai-persona already exists. Refusing to replace it.");
 
 for (const path of configPaths) snapshots.set(path, existsSync(path) ? readFileSync(path) : null);
@@ -159,10 +162,14 @@ if (agent === "claude") {
 
 mkdirSync(runtimeParent, { recursive: true });
 
+let installedRuntime = false;
 try {
-  run("git", ["clone", "--depth", "1", source, staging], project);
-  run("npm", ["ci", "--omit=dev"], staging);
-  renameSync(staging, runtime);
+  if (!existsSync(runtime)) {
+    run("git", ["clone", "--depth", "1", source, staging], project);
+    run("npm", ["ci", "--omit=dev"], staging);
+    renameSync(staging, runtime);
+    installedRuntime = true;
+  }
 
   if (agent === "opencode") {
     mkdirSync(dirname(openCodePlugin), { recursive: true });
@@ -187,7 +194,7 @@ try {
   }
 } catch (error) {
   rmSync(staging, { recursive: true, force: true });
-  rmSync(runtime, { recursive: true, force: true });
+  if (installedRuntime) rmSync(runtime, { recursive: true, force: true });
   if (agent === "opencode" && existsSync(openCodePlugin)) unlinkSync(openCodePlugin);
   for (const [path, original] of snapshots) {
     if (original === null) rmSync(path, { force: true });
