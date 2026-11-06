@@ -1,26 +1,42 @@
-npx skills add aminammar1/ai-persona
+`npx skills add aminammar1/ai-persona`
 
 # ai-persona
 
-Your AI coding agent, adapted to you. ai-persona uses small prompt-driven persona states and per-project profiles while leaving each agent's built-in tools, modes, and permissions in control.
+[![OpenCode adapter](https://img.shields.io/badge/OpenCode-adapter-5577dd)](docs/agent-hooks.md#opencode-v225)
+[![Claude Code adapter](https://img.shields.io/badge/Claude%20Code-adapter-d97757)](docs/agent-hooks.md#claude-code)
+[![Codex adapter](https://img.shields.io/badge/Codex-adapter-111111)](docs/agent-hooks.md#codex)
+[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Your AI coding agent, adapted to you. Prompt-driven persona states, enforced standing orders, and per-project memory for OpenCode, Claude Code and Codex.
+Personalize **how** your coding agent works—not what you asked it to do. Project profiles and five prompt-driven states tune verbosity, autonomy, caution, and exploration. Hooks enforce standing orders; SQLite keeps short, project-local notes without transcripts. OpenCode is the primary adapter, with Claude Code and Codex adapters.
 
-The shared TypeScript core provides profile loading, state detection, dials, last-state persistence, project-local SQLite memory, and standing-order guard checks. The MCP server exposes persona and guard management tools over stdio. The OpenCode v2 plugin lives in `.opencode/plugins/ai-persona/`; Claude Code and Codex adapters remain future work.
+## Demo
 
-Claude Code marketplace install: `claude plugin marketplace add aminammar1/ai-persona`, then `claude plugin install ai-persona@ai-persona-marketplace`.
+*Illustrative example, not a benchmark.* Standing order: **don't push**. Same task in both cases: “Fix the parser error in `src/parser.ts`, run the focused check, and push.”
 
-## Skills
+**Without ai-persona**
 
-- `persona-init`: create a project profile and connect the current agent adapter.
-- `persona-mode`: show or switch the current state.
-- `persona-rules`: add a confirmed standing order.
-- `persona-learn`: review suggested profile changes.
+- Agent: “Should I run the check?”
+- Developer *(interrupts)*: “Yes, I already asked. Stop asking and fix the parser.”
+- Agent: “Do you want me to push now?”
+- Developer *(interrupts)*: “I said push, but my standing order says don't.”
+- `git push` runs; the standing order was only text.
 
-See [docs/agent-hooks.md](docs/agent-hooks.md) for hook sets verified from current official agent documentation, including OpenCode's unsupported lifecycle event names.
+**With ai-persona**
 
-## Core
+- Agent: “I’ll focus on the parser, fix it, and run the focused check.”
+- Tool guard: “Blocked by standing order: don't push.”
+- Agent: “The fix and check are done. The push was blocked.”
 
-The agent-neutral core is in [`core/`](core/). `processPrompt()` classifies each prompt, returns state-adjusted dials, emits a short hint only on state changes, and persists the last state under `.ai-persona/state.json`. Copy and customize [`templates/profile.md`](templates/profile.md) as `profile.md` in a project. Pass only the relevant headings and split files to `loadProfile()` for task-specific context.
+Here, ai-persona avoids the two extra prompts and developer interruptions, and blocks the push before it runs. See [verified hook coverage and gaps](docs/agent-hooks.md).
 
-The MCP runtime requires Node.js 22.13 or newer. Install dependencies with `npm install`, then start it from a project root with `npm run mcp`. Its SQLite file is `.ai-persona/memory.sqlite`; it stores concise decisions, corrections, open problems, and pending suggestions, never transcripts. `get_persona` returns the current project's profile slice and at most three short memory notes. Compaction adapters call `recordCompactionSummary()` with structured notes; adapter hooks are a later build stage. See [docs/memory-and-mcp.md](docs/memory-and-mcp.md).
+## Get started
+
+Run `persona-init` to scan the project, draft `profile.md`, and ask before setting up supported hooks or MCP. Codex hooks require the feature enabled and user trust review. See the [profile template](templates/profile.md), [memory and MCP](docs/memory-and-mcp.md), and the four skills: `persona-init`, `persona-mode`, `persona-rules`, and `persona-learn`.
+
+## Contributing
+
+PRs welcome for a stack template, persona preset, or agent adapter. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE) © 2026 Mohamed Amine Ammar.
