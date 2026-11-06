@@ -1,0 +1,23 @@
+{
+  "name": "ai-persona",
+  "version": "0.1.0",
+  "description": "Prompt-driven persona states and per-project preferences for coding agents.",
+  "author": {
+    "name": "aminammar1"
+  },
+  "homepage": "https://github.com/aminammar1/ai-persona",
+  "repository": "https://github.com/aminammar1/ai-persona",
+  "license": "MIT",
+  "keywords": [
+    "ai-agents",
+    "coding-agents",
+    "agent-skills",
+    "opencode",
+    "claude-code",
+    "codex",
+    "persona",
+    "developer-tools",
+    "mcp"
+  ],
+  "skills": "./skills/"
+}

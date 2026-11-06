@@ -1,0 +1,17 @@
+{
+  "name": "ai-persona-marketplace",
+  "description": "Claude Code plugins by aminammar1.",
+  "owner": {
+    "name": "aminammar1"
+  },
+  "plugins": [
+    {
+      "name": "ai-persona",
+      "source": {
+        "source": "github",
+        "repo": "aminammar1/ai-persona"
+      },
+      "description": "Prompt-driven persona states and per-project preferences for coding agents."
+    }
+  ]
+}

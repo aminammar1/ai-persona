@@ -1,0 +1,8 @@
+{
+  "name": "ai-persona",
+  "version": "0.1.0",
+  "description": "Prompt-driven persona states and per-project preferences for coding agents.",
+  "author": {
+    "name": "aminammar1"
+  }
+}
