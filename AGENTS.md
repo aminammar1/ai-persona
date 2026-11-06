@@ -5,3 +5,7 @@
 - OpenCode: use the free `glm5.3` model.
 
 These are local development choices, not ai-persona runtime defaults. Do not change an agent's built-in tools, modes, model settings, or permissions as part of the plugin.
+
+# Git remote
+
+- Keep `origin` set to `git@github.com:aminammar1/ai-persona.git`; use SSH for pushes and pulls, and do not switch this remote to HTTPS.
