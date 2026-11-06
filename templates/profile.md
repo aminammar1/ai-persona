@@ -4,17 +4,36 @@
 
 - Stack:
 - Main commands:
-- Trusted references:
 
-## Working preferences
+## Trusted links
 
-- Baseline verbosity:
-- Baseline autonomy:
-- Baseline caution:
-- Baseline exploration:
-- Habits to preserve:
+- [Name](https://example.com) — Use when checking ...
+
+## Tools
+
+- Preferred tools or MCP servers:
+- Commands to use:
+
+## Habits
+
+- Preserve:
+
+## Baseline dials
+
+- Verbosity: balanced
+- Autonomy: act
+- Caution: balanced
+- Exploration: balanced
 
 ## Project-specific notes
 
 - Architecture:
-- Areas to load only for relevant tasks:
+- Database:
+- Backend:
+- Frontend:
+
+## Optional profile files
+
+For large projects, split details into focused Markdown files such as
+`profile/backend.md` or `profile/database.md`. Request only the files relevant
+to the current task when loading the profile.
