@@ -1,6 +1,6 @@
 # Project memory and MCP tools
 
-The local MCP server is started with `npm run mcp` from the project root. It speaks stdio; stdout is reserved for MCP messages. The server uses its launch directory as the project boundary and writes memory to `.ai-persona/memory.sqlite`.
+The local MCP server speaks stdio; stdout is reserved for MCP messages. `persona-init` registers it for the selected agent and sets the current project root explicitly. It writes memory to `.ai-persona/memory.sqlite`.
 
 ## Stored data
 
@@ -26,7 +26,7 @@ Each project's database is in that project's directory. `get_persona(task)` cann
 
 Confirmed guards are stored in the same project-local SQLite file and are checked by `checkGuard(projectRoot, call)` before an adapter runs a tool. Supported forms are `don't commit`, `don't push`, `don't touch <path>[, <path>...]`, and `use this MCP <name>`. A required-MCP guard blocks calls to other MCP servers; it leaves non-MCP tools alone. The check does not depend on persona state. Matching calls receive one single-line reason. Adapters must normalize tool identity, MCP server identity, shell command text, and target paths before calling it.
 
-The OpenCode v2 plugin at `.opencode/plugins/ai-persona/` checks confirmed rules in the `execute.before` tool hook and raises OpenCode's `Tool.Error` with a one-line reason before execution. It selects the database using the current session location. Guards run regardless of persona state. If the store or adapter check fails, the hook blocks the call rather than letting an unchecked call run. This adapter targets OpenCode 2.2.5; Claude Code and Codex pre-tool adapters are not wired yet.
+The OpenCode v2 plugin at `.opencode/plugins/ai-persona/` checks confirmed rules in the `execute.before` tool hook and raises OpenCode's `Tool.Error` with a one-line reason before execution. It selects the database using the current session location. Guards run regardless of persona state. If the store or adapter check fails, the hook blocks the call rather than letting an unchecked call run. `persona-init` installs the runtime into `.ai-persona/runtime`, links this plugin into `.opencode/plugins/`, and registers the MCP server. Claude Code and Codex call `hooks/agent-hook.ts` from their project hook configuration. Their verified hook coverage and gaps are listed in [agent-hooks.md](agent-hooks.md).
 
 OpenCode loads this local plugin automatically. Its v2 API does not expose `session.compacted`; `session.compaction.ended` exists, but this plugin does not use it as a substitute. Compaction memory saving therefore remains unwired.
 

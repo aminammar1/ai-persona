@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 
 const repository = "git@github.com:aminammar1/ai-persona.git";
@@ -98,13 +98,15 @@ function addCodexMcp(path, runtime, project) {
   writeFileSync(path, `${current.trimEnd()}${current.trim() ? "\n\n" : ""}${section}`);
 }
 
-function codexHooksDisabled() {
+function codexHooksDisabled(project) {
   const codexHome = process.env.CODEX_HOME || join(process.env.HOME || "", ".codex");
-  const configPath = join(codexHome, "config.toml");
-  if (!existsSync(configPath)) return false;
-  const source = readFileSync(configPath, "utf8");
-  const features = source.match(/^\[features\][\s\S]*?(?=^\[|$(?![\s\S]))/m)?.[0] ?? "";
-  return /^hooks\s*=\s*false\b/m.test(features);
+  const configPaths = [join(codexHome, "config.toml"), join(project, ".codex", "config.toml")];
+  return configPaths.some((configPath) => {
+    if (!existsSync(configPath)) return false;
+    const source = readFileSync(configPath, "utf8");
+    const features = source.match(/^\[features\][\s\S]*?(?=^\[|$(?![\s\S]))/m)?.[0] ?? "";
+    return /^hooks\s*=\s*false\b/m.test(features);
+  });
 }
 
 const args = process.argv.slice(2);
@@ -113,7 +115,8 @@ const valueAfter = (flag, fallback) => {
   return index >= 0 ? args[index + 1] : fallback;
 };
 const project = resolve(valueAfter("--project", process.cwd()));
-const agent = valueAfter("--agent", "");
+const agentInput = valueAfter("--agent", "").toLocaleLowerCase();
+const agent = ({ "claude-code": "claude", "codex-cli": "codex", "codex-app": "codex" })[agentInput] ?? agentInput;
 const source = valueAfter("--source", repository);
 const approved = args.includes("--approved");
 const runtimeParent = join(project, ".ai-persona");
@@ -124,6 +127,12 @@ const claudeMcp = join(project, ".mcp.json");
 const codexHooks = join(project, ".codex", "hooks.json");
 const codexConfig = join(project, ".codex", "config.toml");
 const openCodePlugin = join(project, ".opencode", "plugins", "ai-persona");
+const configPaths = agent === "claude"
+  ? [claudeSettings, claudeMcp]
+  : agent === "codex"
+    ? [codexHooks, codexConfig]
+    : [join(project, "opencode.json"), join(project, "opencode.jsonc"), join(project, ".opencode", "opencode.json"), join(project, ".opencode", "opencode.jsonc")];
+const snapshots = new Map();
 
 if (!approved) throw new Error("Setup requires prior developer approval. Pass --approved only after the developer confirms the displayed plan.");
 if (!existsSync(project)) throw new Error(`Project directory does not exist: ${project}`);
@@ -133,6 +142,20 @@ if (!available("npm")) throw new Error("npm is required to install runtime depen
 if (agent === "opencode" && !available("opencode", ["--version"])) throw new Error("OpenCode must be installed before enabling its adapter.");
 if (existsSync(runtime) || existsSync(staging)) throw new Error("Runtime already exists. Refusing to replace it.");
 if (agent === "opencode" && existsSync(openCodePlugin)) throw new Error(".opencode/plugins/ai-persona already exists. Refusing to replace it.");
+
+for (const path of configPaths) snapshots.set(path, existsSync(path) ? readFileSync(path) : null);
+if (agent === "claude") {
+  readJson(claudeSettings, {});
+  const config = readJson(claudeMcp, {});
+  if (config.mcpServers?.["ai-persona"]) throw new Error(`${claudeMcp} already defines an ai-persona server.`);
+} else if (agent === "codex") {
+  readJson(codexHooks, {});
+  const config = existsSync(codexConfig) ? readFileSync(codexConfig, "utf8") : "";
+  if (/^\[mcp_servers\.(?:"ai-persona"|ai_persona)\]/m.test(config)) throw new Error(`${codexConfig} already defines an ai-persona MCP server.`);
+} else {
+  const configured = configPaths.some((path) => snapshots.get(path)?.toString("utf8").includes('"ai-persona"'));
+  if (configured) throw new Error("OpenCode already has an ai-persona MCP entry. Refusing to add a duplicate.");
+}
 
 mkdirSync(runtimeParent, { recursive: true });
 
@@ -159,11 +182,17 @@ try {
   }
 
   process.stdout.write(`ai-persona runtime installed for ${agent}. Restart the agent and use persona-mode to check the active state.\n`);
-  if (agent === "codex" && codexHooksDisabled()) {
+  if (agent === "codex" && codexHooksDisabled(project)) {
     process.stdout.write("Warning: hooks are disabled in your Codex config. The adapter is installed but its hooks will not run; review [features].hooks before relying on guards.\n");
   }
 } catch (error) {
   rmSync(staging, { recursive: true, force: true });
+  rmSync(runtime, { recursive: true, force: true });
+  if (agent === "opencode" && existsSync(openCodePlugin)) unlinkSync(openCodePlugin);
+  for (const [path, original] of snapshots) {
+    if (original === null) rmSync(path, { force: true });
+    else writeFileSync(path, original);
+  }
   process.stderr.write(`ai-persona setup: ${error instanceof Error ? error.message : String(error)}\n`);
   process.exitCode = 1;
 }
