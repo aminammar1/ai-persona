@@ -41,16 +41,6 @@
         ]
       }
     ],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "AI_PERSONA_AGENT=codex npm --prefix \"${PLUGIN_ROOT}\" run --silent hook"
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [
@@ -66,7 +56,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "AI_PERSONA_AGENT=codex npm --prefix \"${PLUGIN_ROOT}\" run --silent hook"
+            "command": "AI_PERSONA_AGENT=codex npm --prefix \"${PLUGIN_ROOT}\" run --silent hook",
+            "timeout": 3
           }
         ]
       }

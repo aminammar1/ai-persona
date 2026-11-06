@@ -103,10 +103,8 @@ export default Plugin.define({
         }
         if (event.type === "permission.asked") {
           recordPermissionAsked(projectRoot, event.data.id, event.data.action, event.data.resources);
-          console.info(`[ai-persona] permission.asked ${event.data.id} ${event.data.action}`);
         } else {
           recordPermissionReply(projectRoot, event.data.requestID, event.data.reply);
-          console.info(`[ai-persona] permission.replied ${event.data.requestID}`);
         }
       }
     })().catch((error: unknown) => {

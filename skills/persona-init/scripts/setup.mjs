@@ -98,15 +98,26 @@ function addCodexMcp(path, runtime, project) {
   writeFileSync(path, `${current.trimEnd()}${current.trim() ? "\n\n" : ""}${section}`);
 }
 
+function codexHomePath() {
+  return process.env.CODEX_HOME || join(process.env.HOME || "", ".codex");
+}
+
 function codexHooksDisabled(project) {
-  const codexHome = process.env.CODEX_HOME || join(process.env.HOME || "", ".codex");
-  const configPaths = [join(codexHome, "config.toml"), join(project, ".codex", "config.toml")];
+  const configPaths = [join(codexHomePath(), "config.toml"), join(project, ".codex", "config.toml")];
   return configPaths.some((configPath) => {
     if (!existsSync(configPath)) return false;
     const source = readFileSync(configPath, "utf8");
     const features = source.match(/^\[features\][\s\S]*?(?=^\[|$(?![\s\S]))/m)?.[0] ?? "";
     return /^(?:hooks|codex_hooks)\s*=\s*false\b/m.test(features);
   });
+}
+
+function codexProjectTrusted(project) {
+  const configPath = join(codexHomePath(), "config.toml");
+  if (!existsSync(configPath)) return false;
+  const source = readFileSync(configPath, "utf8");
+  const section = JSON.stringify(project);
+  return source.split(/(?=^\[)/m).some((entry) => entry.includes(`[projects.${section}]`) && /^\s*trust_level\s*=\s*"trusted"/m.test(entry));
 }
 
 const args = process.argv.slice(2);
@@ -191,6 +202,9 @@ try {
   process.stdout.write(`ai-persona runtime installed for ${agent}. Restart the agent and use persona-mode to check the active state.\n`);
   if (agent === "codex") {
     process.stdout.write("Codex loads project settings only after you trust the project. Review and trust ai-persona hooks with /hooks before relying on them. Setup does not change project trust.\n");
+    if (!codexProjectTrusted(project)) {
+      process.stdout.write(`Warning: ${project} is not marked trusted in ${join(codexHomePath(), "config.toml")}, so project settings under .codex — the ai-persona hooks and MCP server — will not load. Trust the project (for example by confirming Codex's trust prompt) before relying on this adapter.\n`);
+    }
     if (codexHooksDisabled(project)) {
       process.stdout.write("Warning: hooks are disabled in your Codex config. The adapter is installed but its hooks will not run; review [features].hooks (or the deprecated codex_hooks alias) before relying on guards.\n");
     }

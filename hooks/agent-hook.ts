@@ -16,8 +16,6 @@ interface HookInput extends Record<string, unknown> {
   permission_mode?: string;
   tool_name?: string;
   tool_input?: unknown;
-  permissionDecision?: string;
-  event?: string;
   compact_summary?: string;
 }
 
@@ -120,9 +118,7 @@ async function main(): Promise<void> {
       const decision = evaluateGuards(projectRoot, toolCall(input), getActiveGuards(projectRoot));
       if (!decision.blocked) return;
       const reason = oneLine(decision.reason ?? "Blocked by an ai-persona standing order.");
-      output(agent === "codex"
-        ? { hookSpecificOutput: { hookEventName: event, permissionDecision: "deny", permissionDecisionReason: reason } }
-        : { hookSpecificOutput: { hookEventName: event, permissionDecision: "deny", permissionDecisionReason: reason } });
+      output({ hookSpecificOutput: { hookEventName: event, permissionDecision: "deny", permissionDecisionReason: reason } });
     } catch {
       const reason = "Blocked: ai-persona standing-order checks failed; repair the project store and retry.";
       output({ hookSpecificOutput: { hookEventName: event, permissionDecision: "deny", permissionDecisionReason: reason } });
@@ -135,12 +131,6 @@ async function main(): Promise<void> {
     if (!/(?:^|_)(?:edit|write|apply_patch|notebookedit)$/.test(tool)) return;
     const nudge = habitNudge(projectRoot);
     if (nudge) output({ hookSpecificOutput: { hookEventName: event, additionalContext: `Profile habit: ${nudge}` } });
-    return;
-  }
-
-  if (event === "PermissionRequest" || event === "PermissionDenied") {
-    const toolName = typeof input.tool_name === "string" ? input.tool_name : "unknown";
-    process.stderr.write(`[ai-persona] ${agent} ${event} for ${toolName}\n`);
     return;
   }
 
