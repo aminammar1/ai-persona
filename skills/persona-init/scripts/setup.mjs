@@ -120,6 +120,15 @@ function codexProjectTrusted(project) {
   return source.split(/(?=^\[)/m).some((entry) => entry.includes(`[projects.${section}]`) && /^\s*trust_level\s*=\s*"trusted"/m.test(entry));
 }
 
+/** omp's native extension discovery skips gitignored paths; .omp itself is often ignored. */
+function ompDiscoveryGitignored(project) {
+  const gitignore = join(project, ".gitignore");
+  if (!existsSync(gitignore)) return false;
+  return readFileSync(gitignore, "utf8")
+    .split(/\r?\n/)
+    .some((line) => /^\s*\.omp(?:\/|\s|$)/.test(line));
+}
+
 const args = process.argv.slice(2);
 const valueAfter = (flag, fallback) => {
   const index = args.indexOf(flag);
@@ -138,24 +147,30 @@ const claudeMcp = join(project, ".mcp.json");
 const codexHooks = join(project, ".codex", "hooks.json");
 const codexConfig = join(project, ".codex", "config.toml");
 const openCodePlugin = join(project, ".opencode", "plugins", "ai-persona");
+const ompMcp = join(project, ".omp", "mcp.json");
+const ompExtension = join(project, ".omp", "extensions", "ai-persona.ts");
 const configPaths = agent === "claude"
   ? [claudeSettings, claudeMcp]
   : agent === "codex"
     ? [codexHooks, codexConfig]
-    : [join(project, "opencode.json"), join(project, "opencode.jsonc"), join(project, ".opencode", "opencode.json"), join(project, ".opencode", "opencode.jsonc")];
+    : agent === "omp"
+      ? [ompMcp]
+      : [join(project, "opencode.json"), join(project, "opencode.jsonc"), join(project, ".opencode", "opencode.json"), join(project, ".opencode", "opencode.jsonc")];
 const snapshots = new Map();
 
 if (!approved) throw new Error("Setup requires prior developer approval. Pass --approved only after the developer confirms the displayed plan.");
 if (!existsSync(project)) throw new Error(`Project directory does not exist: ${project}`);
-if (!["opencode", "claude", "codex"].includes(agent)) throw new Error("Choose --agent opencode, --agent claude, or --agent codex.");
+if (!["opencode", "claude", "codex", "omp"].includes(agent)) throw new Error("Choose --agent opencode, --agent claude, --agent codex, or --agent omp.");
 if (!available("git")) throw new Error("Git is required to fetch the runtime.");
 if (!available("npm")) throw new Error("npm is required to install runtime dependencies.");
 if (agent === "opencode" && !available("opencode", ["--version"])) throw new Error("OpenCode must be installed before enabling its adapter.");
+if (agent === "omp" && !available("omp", ["--version"])) throw new Error("omp must be installed before enabling its adapter.");
 if (existsSync(staging)) throw new Error("A runtime installation is already in progress. Remove the stale staging directory before retrying.");
 if (existsSync(runtime) && (!existsSync(join(runtime, "package.json")) || !existsSync(join(runtime, "node_modules", "tsx", "dist", "cli.mjs")))) {
   throw new Error("An incomplete runtime already exists. Repair or remove it before configuring another adapter.");
 }
 if (agent === "opencode" && existsSync(openCodePlugin)) throw new Error(".opencode/plugins/ai-persona already exists. Refusing to replace it.");
+if (agent === "omp" && existsSync(ompExtension)) throw new Error(".omp/extensions/ai-persona.ts already exists. Refusing to replace it.");
 
 for (const path of configPaths) snapshots.set(path, existsSync(path) ? readFileSync(path) : null);
 if (agent === "claude") {
@@ -166,6 +181,9 @@ if (agent === "claude") {
   readJson(codexHooks, {});
   const config = existsSync(codexConfig) ? readFileSync(codexConfig, "utf8") : "";
   if (/^\[mcp_servers\.(?:"ai-persona"|ai_persona)\]/m.test(config)) throw new Error(`${codexConfig} already defines an ai-persona MCP server.`);
+} else if (agent === "omp") {
+  const config = readJson(ompMcp, {});
+  if (config.mcpServers?.["ai-persona"]) throw new Error(`${ompMcp} already defines an ai-persona server.`);
 } else {
   const configured = configPaths.some((path) => snapshots.get(path)?.toString("utf8").includes('"ai-persona"'));
   if (configured) throw new Error("OpenCode already has an ai-persona MCP entry. Refusing to add a duplicate.");
@@ -189,6 +207,20 @@ try {
     run("opencode", ["mcp", "add", "ai-persona", "--env", `AI_PERSONA_PROJECT_ROOT=${project}`, "--", "node",
       join(".ai-persona", "runtime", "node_modules", "tsx", "dist", "cli.mjs"),
       join(".ai-persona", "runtime", "mcp", "server.ts")], project);
+  } else if (agent === "omp") {
+    mkdirSync(dirname(ompExtension), { recursive: true });
+    symlinkSync(relative(dirname(ompExtension), join(runtime, "hooks", "omp-extension.ts")), ompExtension, "file");
+    const config = readJson(ompMcp, {});
+    config.$schema ??= "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json";
+    config.mcpServers ??= {};
+    config.mcpServers["ai-persona"] = {
+      type: "stdio",
+      command: "node",
+      args: [join(runtime, "node_modules", "tsx", "dist", "cli.mjs"), join(runtime, "mcp", "server.ts")],
+      cwd: project,
+      env: { AI_PERSONA_PROJECT_ROOT: project },
+    };
+    writeJson(ompMcp, config);
   } else if (agent === "claude") {
     const manifest = readJson(join(runtime, "hooks", "hooks.json"), {});
     mergeHookSettings(claudeSettings, manifest, runtime, "claude");
@@ -209,10 +241,17 @@ try {
       process.stdout.write("Warning: hooks are disabled in your Codex config. The adapter is installed but its hooks will not run; review [features].hooks (or the deprecated codex_hooks alias) before relying on guards.\n");
     }
   }
+  if (agent === "omp") {
+    process.stdout.write("omp auto-discovers the extension from .omp/extensions and the MCP server from .omp/mcp.json. Restart omp in this project to load them.\n");
+    if (ompDiscoveryGitignored(project)) {
+      process.stdout.write("Warning: .omp is ignored by this project's .gitignore, and omp's native extension discovery skips gitignored paths. Un-ignore .omp/extensions/ai-persona.ts or load it explicitly (--extension) before relying on guards.\n");
+    }
+  }
 } catch (error) {
   rmSync(staging, { recursive: true, force: true });
   if (installedRuntime) rmSync(runtime, { recursive: true, force: true });
   if (agent === "opencode" && existsSync(openCodePlugin)) unlinkSync(openCodePlugin);
+  if (agent === "omp" && existsSync(ompExtension)) unlinkSync(ompExtension);
   for (const [path, original] of snapshots) {
     if (original === null) rmSync(path, { force: true });
     else writeFileSync(path, original);

@@ -8,63 +8,10 @@ import {
   recordPermissionAsked,
   recordPermissionReply,
 } from "../../../core/learning.ts";
-import { loadProfile } from "../../../core/profile.ts";
-import { processPrompt } from "../../../core/transition.ts";
+import { habitNudgeLine } from "../../../core/profile.ts";
+import { currentPersonaHint, hintForState, processPrompt } from "../../../core/transition.ts";
+import { normalizeToolCall } from "../../../core/tool-call.ts";
 import { markPromptInterrupted, resetPromptSignals, writeLastState } from "../../../core/state-store.ts";
-import type { ToolCallForGuard } from "../../../core/guards.ts";
-
-function inputObject(input: unknown): Record<string, unknown> {
-  return input && typeof input === "object" && !Array.isArray(input)
-    ? input as Record<string, unknown>
-    : {};
-}
-
-function strings(value: unknown): string[] {
-  if (typeof value === "string") return [value];
-  if (!Array.isArray(value)) return [];
-  return value.filter((item): item is string => typeof item === "string");
-}
-
-function patchPaths(patchText: string): string[] {
-  const paths: string[] = [];
-  const fileMarker = /^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm;
-  const moveMarker = /^\*\*\* Move to: (.+)$/gm;
-  for (const match of patchText.matchAll(fileMarker)) paths.push(match[1].trim());
-  for (const match of patchText.matchAll(moveMarker)) paths.push(match[1].trim());
-  return paths;
-}
-
-function normalizeToolCall(toolName: string, input: unknown, mcpServer?: string): ToolCallForGuard {
-  const values = inputObject(input);
-  const command = [values.command, values.cmd].find((value) => typeof value === "string");
-  const paths = [
-    ...strings(values.filePath),
-    ...strings(values.path),
-    ...strings(values.file),
-    ...strings(values.files),
-    ...strings(values.paths),
-    ...strings(values.target),
-    ...strings(values.destination),
-    ...strings(values.patchText).flatMap(patchPaths),
-  ];
-  return {
-    toolName,
-    ...(typeof command === "string" ? { command } : {}),
-    ...(paths.length ? { paths } : {}),
-    ...(mcpServer ? { mcpServer } : {}),
-  };
-}
-
-function habitNudge(projectRoot: string): string | null {
-  const sections = loadProfile(projectRoot, { sections: ["Habit nudge", "Habits"] }).sections;
-  const dedicated = sections["Habit nudge"]?.split(/\r?\n/).map((line) => line.replace(/^\s*[-*]\s*/, "").trim()).find(Boolean);
-  const fromHabits = sections.Habits?.split(/\r?\n/)
-    .map((line) => line.replace(/^\s*[-*]\s*/, "").trim())
-    .find((line) => /\b(run|test|build|lint|verify|check)\b/i.test(line));
-  const value = dedicated || fromHabits;
-  if (!value) return null;
-  return value.replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").slice(0, 140).trim();
-}
 
 function appendNudge(event: { result: { content?: string | ReadonlyArray<{ type: string; text?: string; [key: string]: unknown }> } }, nudge: string): void {
   const text = `Profile habit: ${nudge}`;
@@ -79,16 +26,35 @@ export default Plugin.define({
   id: "ai-persona",
   async setup(ctx) {
     const controller = new AbortController();
+    /** project root -> current persona hint ("" while none); refreshed on every prompt. */
+    const stateHints = new Map<string, string>();
+    /** sessionID -> project root, filled from prompts and session creation. */
+    const sessionRoots = new Map<string, string>();
+    /** Subagent child sessions never receive persona hints. */
+    const childSessions = new Set<string>();
+
+    function currentHint(projectRoot: string): string {
+      const cached = stateHints.get(projectRoot);
+      if (cached !== undefined) return cached;
+      const hint = currentPersonaHint(projectRoot) ?? "";
+      stateHints.set(projectRoot, hint);
+      return hint;
+    }
+
     void (async () => {
       for await (const event of ctx.event.subscribe({
         types: ["session.created", "session.execution.interrupted", "session.compaction.ended", "permission.asked", "permission.replied"],
         signal: controller.signal,
       })) {
         if (event.type === "session.created") {
-          if (!event.data.parentID) {
-            resetPromptSignals(event.data.location.directory);
-            writeLastState(event.data.location.directory, "init");
+          sessionRoots.set(event.data.sessionID, event.data.location.directory);
+          if (event.data.parentID) {
+            childSessions.add(event.data.sessionID);
+            continue;
           }
+          resetPromptSignals(event.data.location.directory);
+          writeLastState(event.data.location.directory, "init");
+          stateHints.delete(event.data.location.directory);
           continue;
         }
         const projectRoot = event.location?.directory ?? ctx.location.project.canonical;
@@ -113,9 +79,28 @@ export default Plugin.define({
 
     await ctx.session.hook("prompt", async (event) => {
       const session = await ctx.session.get({ sessionID: event.sessionID });
-      recordLearningConfirmation(session.location.directory, event.prompt.text);
-      const transition = processPrompt(session.location.directory, event.prompt.text);
-      if (transition.hint) event.prompt.text = `${event.prompt.text}\n\n${transition.hint}`;
+      const projectRoot = session.location.directory;
+      sessionRoots.set(event.sessionID, projectRoot);
+      recordLearningConfirmation(projectRoot, event.prompt.text);
+      const transition = processPrompt(projectRoot, event.prompt.text);
+      // The user's prompt text is never modified; hints ride invisibly with
+      // every model call through the context hook below.
+      stateHints.set(projectRoot, hintForState(transition.state, transition.dials));
+    });
+
+    await ctx.session.hook("context", async (event) => {
+      try {
+        if (childSessions.has(event.sessionID)) return;
+        let projectRoot = sessionRoots.get(event.sessionID);
+        if (!projectRoot) {
+          projectRoot = (await ctx.session.get({ sessionID: event.sessionID })).location.directory;
+          sessionRoots.set(event.sessionID, projectRoot);
+        }
+        const hint = currentHint(projectRoot);
+        if (hint) event.system.push({ type: "text", text: hint });
+      } catch {
+        // A persona hint must never break a model call.
+      }
     });
 
     await ctx.session.hook("compaction", (event) => {
@@ -152,9 +137,10 @@ export default Plugin.define({
     });
 
     await ctx.tool.hook("execute.after", async (event) => {
-      if (event.status !== "completed" || !["edit", "write", "apply_patch"].includes(event.tool)) return;
+      // OpenCode v2 renamed the v1 apply_patch tool to patch.
+      if (event.status !== "completed" || !["edit", "write", "patch"].includes(event.tool)) return;
       const session = await ctx.session.get({ sessionID: event.sessionID });
-      const nudge = habitNudge(session.location.directory);
+      const nudge = habitNudgeLine(session.location.directory);
       if (nudge) appendNudge(event, nudge);
     });
 

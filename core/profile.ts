@@ -96,3 +96,20 @@ export function loadProfile(projectRoot: string, options: LoadProfileOptions = {
 
   return { baseline: parsed.baseline, sections, files, profilePath };
 }
+
+const HABIT_VERB = /\b(run|test|build|lint|verify|check)\b/i;
+
+/**
+ * First usable habit line from profile.md: a dedicated "Habit nudge" bullet,
+ * else the first Habits bullet naming a run/test/build verb. Null when absent.
+ */
+export function habitNudgeLine(projectRoot: string, options: LoadProfileOptions = {}): string | null {
+  const sections = loadProfile(projectRoot, options).sections;
+  const bullets = (section?: string): string[] =>
+    (section ?? "").split(/\r?\n/).map((line) => line.replace(/^\s*[-*]\s*/, "").trim());
+  const dedicated = bullets(sections["Habit nudge"]).find(Boolean);
+  const fromHabits = bullets(sections.Habits).find((line) => HABIT_VERB.test(line));
+  const value = dedicated || fromHabits;
+  if (!value) return null;
+  return value.replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").slice(0, 140).trim();
+}

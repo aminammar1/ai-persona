@@ -4,7 +4,7 @@ import { detectPersonaState } from "./detector.ts";
 import { loadProfile, type LoadProfileOptions } from "./profile.ts";
 import { readLastState, readPromptSignals, writeLastState } from "./state-store.ts";
 import { getLearnedDialOverride } from "./learning.ts";
-import type { PersonaState, PromptContext, PromptTransition } from "./types.ts";
+import type { PersonaDials, PersonaState, PromptContext, PromptTransition } from "./types.ts";
 
 const STATE_BEHAVIOR: Record<PersonaState, string> = {
   init: "orient to the project and ask before setup changes",
@@ -14,8 +14,20 @@ const STATE_BEHAVIOR: Record<PersonaState, string> = {
   careful: "surface the plan and ask before risky actions",
 };
 
-function buildHint(state: PersonaState, dials: { verbosity: string; autonomy: string; caution: string; exploration: string }): string {
+/** One-line behavioral hint for a state; adapters deliver it without changing the user's prompt. */
+export function hintForState(state: PersonaState, dials: PersonaDials): string {
   return `Persona ${state}: verbosity ${dials.verbosity}, autonomy ${dials.autonomy}, caution ${dials.caution}, exploration ${dials.exploration}. ${STATE_BEHAVIOR[state]}. Keep the developer's task unchanged; respect active agent modes, tools, and permissions.`;
+}
+
+/** Read-only hint for the currently saved state; null when no state is saved yet. Persists nothing. */
+export function currentPersonaHint(projectRoot: string, profileOptions: LoadProfileOptions = {}): string | null {
+  const state = readLastState(projectRoot);
+  if (!state) return null;
+  const profile = loadProfile(projectRoot, profileOptions);
+  const dials = applyStateDials(profile.baseline, state);
+  const learnedVerbosity = getLearnedDialOverride(projectRoot, state, "verbosity");
+  if (learnedVerbosity) dials.verbosity = learnedVerbosity;
+  return hintForState(state, dials);
 }
 
 function promptFingerprint(prompt: string): string {
@@ -52,7 +64,7 @@ export function processPrompt(
     state,
     changed,
     dials,
-    hint: changed ? buildHint(state, dials) : null,
+    hint: changed ? hintForState(state, dials) : null,
   };
   writeLastState(projectRoot, state, settingsKey, {
     hashes: [...promptSignals.hashes, fingerprint],
