@@ -104,7 +104,7 @@ const HABIT_VERB = /\b(run|test|build|lint|verify|check)\b/i;
  * else the first Habits bullet naming a run/test/build verb. Null when absent.
  */
 export function habitNudgeLine(projectRoot: string, options: LoadProfileOptions = {}): string | null {
-  const sections = loadProfile(projectRoot, options).sections;
+  const sections = loadProfile(projectRoot, { ...options, sections: ["Habit nudge", "Habits"] }).sections;
   const bullets = (section?: string): string[] =>
     (section ?? "").split(/\r?\n/).map((line) => line.replace(/^\s*[-*]\s*/, "").trim());
   const dedicated = bullets(sections["Habit nudge"]).find(Boolean);
