@@ -21,11 +21,41 @@ The profile sets your baseline. State hints appear only on changes. A one word o
 
 ## Demo
 
-Try this prompt in any codebase:
+Real output from a live OpenCode run in a Go test project, captured with `opencode run`.
 
-> Trace one existing request from its entry point through the relevant code. Explain what happens and include one edge case. Do not edit files.
+**One word changes the state.** A bare `careful` prompt rewrites the stored state:
 
-The agent uses the project's profile and relevant notes to shape the explanation. A prompt asking for a walkthrough moves the persona toward explore, while the task itself stays unchanged. Standing orders continue to guard matching tool calls in every state.
+```json
+{
+  "lastState": "careful",
+  "settingsKey": "{\"verbosity\":\"balanced\",\"autonomy\":\"ask\",\"caution\":\"high\",\"exploration\":\"balanced\"}"
+}
+```
+
+**Hints ride along invisibly.** The prompt stored in the OpenCode session database keeps your exact text, no persona line appended. The agent still quotes the system note verbatim:
+
+```
+Persona flow: verbosity balanced, autonomy act, caution balanced, exploration balanced. act on the task and keep updates brief. Keep the developer's task unchanged; respect active agent modes, tools, and permissions.
+```
+
+**Standing orders block tool calls before they run.** After confirming a `don't push` guard, `git push origin main` fails before executing:
+
+```
+Error: Blocked by standing order: don't push.
+```
+
+**Habits surface as short nudges** at the end of file tool results:
+
+```
+Created file successfully: nudge-test.txt
+Profile habit: After changing code, run make test before claiming success.
+```
+
+And `get_persona` stays compact, 137 characters in this run:
+
+```
+Baseline dials: verbosity balanced, autonomy act, caution balanced, exploration balanced. Where we left off: No open problem was recorded.
+```
 
 ## Install
 
