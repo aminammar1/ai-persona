@@ -22,11 +22,13 @@ export function recordCompactionText(projectRoot: string, text: string): number 
     decisions: "decisions",
     corrections: "corrections",
     "open problems": "openProblems",
+    // OpenCode v2's built-in compaction template puts open problems under Blocked.
+    blocked: "openProblems",
   };
   let current: keyof typeof groups | null = null;
   const seen = new Set<string>();
   for (const line of text.split(/\r?\n/)) {
-    const heading = line.match(/^\s{0,3}(?:#{1,3}\s*)?(?:\*\*)?(decisions|corrections|open problems)(?:\*\*)?\s*:?\s*#*\s*$/i);
+    const heading = line.match(/^\s{0,3}(?:#{1,3}\s*)?(?:\*\*)?(decisions|corrections|open problems|blocked)(?:\*\*)?\s*:?\s*#*\s*$/i);
     if (heading) {
       current = headings[heading[1].toLocaleLowerCase()];
       seen.add(current);

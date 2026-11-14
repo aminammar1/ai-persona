@@ -106,7 +106,7 @@ export default Plugin.define({
     await ctx.session.hook("compaction", (event) => {
       event.system.push({
         type: "text",
-        text: "For the ai-persona project handoff, include these exact headings and concise bullets: Decisions, Corrections, Open problems. Use an empty Open problems section when none remain. Include only durable project facts. Never include a transcript or unrelated detail.",
+        text: "For the ai-persona project handoff, include these exact headings and concise bullets: Decisions, Corrections, Open problems. Always include Decisions and Open problems, even when empty. Include only durable project facts. Never include a transcript or unrelated detail.",
       });
     });
 
