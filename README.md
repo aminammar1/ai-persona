@@ -48,7 +48,7 @@ Error: Blocked by standing order: don't push.
 
 ```
 Created file successfully: nudge-test.txt
-Profile habit: After changing code, run make test before claiming success.
+Profile habit (from profile.md): After changing code, run make test before claiming success.
 ```
 
 And `get_persona` stays compact, 137 characters in this run:

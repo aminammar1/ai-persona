@@ -130,7 +130,7 @@ async function main(): Promise<void> {
     const tool = typeof input.tool_name === "string" ? input.tool_name.toLocaleLowerCase() : "";
     if (!/(?:^|_)(?:edit|write|apply_patch|notebookedit)$/.test(tool)) return;
     const nudge = habitNudge(projectRoot);
-    if (nudge) output({ hookSpecificOutput: { hookEventName: event, additionalContext: `Profile habit: ${nudge}` } });
+    if (nudge) output({ hookSpecificOutput: { hookEventName: event, additionalContext: `Profile habit (from profile.md): ${nudge}` } });
     return;
   }
 

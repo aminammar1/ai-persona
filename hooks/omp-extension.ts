@@ -148,7 +148,7 @@ export default function (pi: OmpExtensionApi) {
     if (!root) return;
     try {
       const nudge = habitNudgeLine(root);
-      if (nudge) return { additionalContext: `Profile habit: ${nudge}` };
+      if (nudge) return { additionalContext: `Profile habit (from profile.md): ${nudge}` };
     } catch {
       return;
     }

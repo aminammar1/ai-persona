@@ -14,7 +14,7 @@ import { normalizeToolCall } from "../../../core/tool-call.ts";
 import { markPromptInterrupted, resetPromptSignals, writeLastState } from "../../../core/state-store.ts";
 
 function appendNudge(event: { result: { content?: string | ReadonlyArray<{ type: string; text?: string; [key: string]: unknown }> } }, nudge: string): void {
-  const text = `Profile habit: ${nudge}`;
+  const text = `Profile habit (from profile.md): ${nudge}`;
   if (typeof event.result.content === "string") {
     event.result.content = `${event.result.content}\n${text}`;
   } else {
