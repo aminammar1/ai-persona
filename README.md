@@ -3,13 +3,33 @@
 <p align="center"><img src="docs/images/ai-persona-hero.png" alt="ai-persona adapts coding agents across init, flow, debug, explore, and careful states" width="100%"></p>
 
 <p align="center">
-  [![M8ven Score](https://m8ven.ai/badge/mcp/aminammar1-ai-persona-1l51uy?v=8a05b6630645cc2b9335e8ce29dec2ec)](https://m8ven.ai/mcp/aminammar1-ai-persona-1l51uy?s=readme)
-  <a href="https://opencode.ai"><img alt="OpenCode" src="https://img.shields.io/badge/OpenCode-adapter-5577dd"></a>
-  <a href="https://code.claude.com"><img alt="Claude Code" src="https://img.shields.io/badge/Claude%20Code-adapter-d97757"></a>
-  <a href="https://openai.com/codex"><img alt="Codex" src="https://img.shields.io/badge/Codex-adapter-111111"></a>
-  <a href="https://github.com/can1357/oh-my-pi"><img alt="omp" src="https://img.shields.io/badge/omp-adapter-2f6f4f"></a>
-  <a href="https://skills.sh/aminammar1/ai-persona"><img alt="Agent Skills" src="https://img.shields.io/badge/Agent%20Skills-installable-8a63d2"></a>
-  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
+  <a href="https://m8ven.ai/mcp/aminammar1-ai-persona-1l51uy?s=readme">
+    <img src="https://m8ven.ai/badge/mcp/aminammar1-ai-persona-1l51uy?v=8a05b6630645cc2b9335e8ce29dec2ec" alt="M8ven Trust Score" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://opencode.ai">
+    <img src="https://img.shields.io/badge/OpenCode-Adapter-5577dd?style=for-the-badge" alt="OpenCode Adapter" />
+  </a>
+  <a href="https://code.claude.com">
+    <img src="https://img.shields.io/badge/Claude_Code-Adapter-d97757?style=for-the-badge" alt="Claude Code Adapter" />
+  </a>
+  <a href="https://openai.com/codex">
+    <img src="https://img.shields.io/badge/Codex-Adapter-111111?style=for-the-badge" alt="Codex Adapter" />
+  </a>
+  <a href="https://github.com/can1357/oh-my-pi">
+    <img src="https://img.shields.io/badge/Oh_My_Pi-Adapter-2f6f4f?style=for-the-badge" alt="Oh My Pi Adapter" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://skills.sh/aminammar1/ai-persona">
+    <img src="https://img.shields.io/badge/Agent_Skills-Installable-8a63d2?style=for-the-badge" alt="Installable Agent Skills" />
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License" />
+  </a>
 </p>
 
 Your coding agent, shaped around how you work. Five states adapt its style to your project and prompts while keeping your task intact. Hooks check tool calls. Memory stores short notes, never transcripts.
