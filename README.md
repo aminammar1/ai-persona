@@ -3,6 +3,7 @@
 <p align="center"><img src="docs/images/ai-persona-hero.png" alt="ai-persona adapts coding agents across init, flow, debug, explore, and careful states" width="100%"></p>
 
 <p align="center">
+  [![M8ven Score](https://m8ven.ai/badge/mcp/aminammar1-ai-persona-1l51uy?v=8a05b6630645cc2b9335e8ce29dec2ec)](https://m8ven.ai/mcp/aminammar1-ai-persona-1l51uy?s=readme)
   <a href="https://opencode.ai"><img alt="OpenCode" src="https://img.shields.io/badge/OpenCode-adapter-5577dd"></a>
   <a href="https://code.claude.com"><img alt="Claude Code" src="https://img.shields.io/badge/Claude%20Code-adapter-d97757"></a>
   <a href="https://openai.com/codex"><img alt="Codex" src="https://img.shields.io/badge/Codex-adapter-111111"></a>
